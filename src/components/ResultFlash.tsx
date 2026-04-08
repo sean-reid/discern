@@ -18,33 +18,34 @@ export function ResultFlash({ correct, isAi, onComplete }: ResultFlashProps) {
 
   return (
     <motion.div
-      className="absolute inset-0 z-50 flex flex-col items-center justify-center"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
+      className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onComplete}
     >
-      {/* Background overlay */}
-      <div
-        className={`absolute inset-0 ${
-          correct ? "bg-emerald-500/90" : "bg-red-500/90"
+      {/* Frosted glass background */}
+      <div className="absolute inset-0 backdrop-blur-sm bg-black/40" />
+
+      {/* Result pill */}
+      <motion.div
+        className={`relative z-10 px-8 py-5 rounded-2xl ${
+          correct
+            ? "bg-emerald-500 shadow-lg shadow-emerald-500/30"
+            : "bg-red-500 shadow-lg shadow-red-500/30"
         }`}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 text-center text-white">
-        {/* Icon */}
-        <div className="text-7xl mb-4">{correct ? "✓" : "✗"}</div>
-
-        {/* Result text */}
-        <p className="text-2xl font-bold mb-2">
-          {correct ? "Correct!" : "Wrong!"}
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.05 }}
+      >
+        <p className="text-white text-xl font-bold text-center">
+          {correct ? "Correct" : "Wrong"}
         </p>
-        <p className="text-lg opacity-90">
-          It was <span className="font-bold">{isAi ? "AI" : "REAL"}</span>
+        <p className="text-white/80 text-sm text-center mt-1">
+          It was {isAi ? "AI" : "real"}
         </p>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
