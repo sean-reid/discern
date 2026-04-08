@@ -58,7 +58,6 @@ const CATEGORY_QUERIES: Record<string, string[]> = {
 
 const CATEGORY_SLUGS = Object.keys(CATEGORY_QUERIES);
 const IMAGES_PER_SOURCE = 2;
-const AI_TARGET = 20;
 const AI_BATCH_SIZE = 5; // attempts per invocation to stay under time limit
 
 // ---- Hono app ----
@@ -68,54 +67,36 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => c.json({ status: "ok", service: "discern-pipeline" }));
 app.get("/health", (c) => c.json({ status: "healthy" }));
 
-// Process categories in batches to stay under 50 subrequest limit.
-// Batch 0 = first 4 categories, batch 1 = remaining 3.
-const BATCH_SIZE = 3;
+// Each trigger processes one small batch. No chaining — external cron
+// (cron-job.org) fires these frequently instead.
+const REAL_BATCH_SIZE = 3; // categories per trigger (stays under 50 subrequests)
 
 app.get("/trigger/real", (c) => {
-  const batch = parseInt(c.req.query("batch") || "0", 10);
-  const start = batch * BATCH_SIZE;
   const env = c.env;
 
-  if (start >= CATEGORY_SLUGS.length) {
-    return c.json({ type: "real", status: "done" });
-  }
-
-  const end = Math.min(start + BATCH_SIZE, CATEGORY_SLUGS.length);
-
   c.executionCtx.waitUntil((async () => {
-    for (let i = start; i < end; i++) {
-      await ingestCategory(env, i);
+    // Pick 3 random categories each trigger
+    const shuffled = [...CATEGORY_SLUGS].sort(() => Math.random() - 0.5);
+    const batch = shuffled.slice(0, REAL_BATCH_SIZE);
+
+    for (const slug of batch) {
+      const idx = CATEGORY_SLUGS.indexOf(slug);
+      await ingestCategory(env, idx);
     }
-    if (end < CATEGORY_SLUGS.length) {
-      console.log(`[Ingestion] Chaining to batch ${batch + 1}`);
-      await fetch(`${WORKER_URL}/trigger/real?batch=${batch + 1}`);
-    } else {
-      console.log("[Ingestion] All categories complete");
-    }
+    console.log(`[Ingestion] Batch complete: ${batch.join(", ")}`);
   })());
 
   return c.json({ type: "real", status: "started" });
 });
 
 app.get("/trigger/ai", (c) => {
-  const approved = parseInt(c.req.query("approved") || "0", 10);
-  const attempt = parseInt(c.req.query("attempt") || "0", 10);
-  const batchId = c.req.query("batch_id") || uuidv4();
   const env = c.env;
+  const batchId = uuidv4();
 
   c.executionCtx.waitUntil((async () => {
-    const result = await runAiBatch(env, AI_BATCH_SIZE, attempt);
-    const totalApproved = approved + result.approved;
-    const nextAttempt = attempt + AI_BATCH_SIZE;
-
-    if (totalApproved < AI_TARGET && nextAttempt < AI_TARGET * 3) {
-      console.log(`[AI-Gen] Batch: ${result.approved} this batch, ${totalApproved} total. Chaining...`);
-      await fetch(`${WORKER_URL}/trigger/ai?approved=${totalApproved}&attempt=${nextAttempt}&batch_id=${batchId}`);
-    } else {
-      console.log(`[AI-Gen] Complete: ${totalApproved} approved in ${nextAttempt} attempts`);
-      await logIngestionBatch(env.DB, batchId, "ai", nextAttempt, totalApproved, result.rejected, 0, null);
-    }
+    const result = await runAiBatch(env, AI_BATCH_SIZE, 0);
+    await logIngestionBatch(env.DB, batchId, "ai", AI_BATCH_SIZE, result.approved, result.rejected, 0, null);
+    console.log(`[AI-Gen] Batch: approved=${result.approved} rejected=${result.rejected}`);
   })());
 
   return c.json({ type: "ai", status: "started" });
@@ -141,14 +122,14 @@ const worker = {
     switch (hour) {
       case 3:
       case 15:
-        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/real`));
+        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/real`).catch(() => {}));
         break;
       case 4:
         ctx.waitUntil(runEloRecalculation(env));
         break;
       case 9:
       case 21:
-        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/ai`));
+        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/ai`).catch(() => {}));
         break;
       default:
         console.log(`No task configured for hour ${hour} UTC`);
