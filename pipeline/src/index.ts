@@ -68,12 +68,12 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => c.json({ status: "ok", service: "discern-pipeline" }));
 app.get("/health", (c) => c.json({ status: "healthy" }));
 
-app.get("/trigger/ingest", (c) => {
+app.get("/trigger/real", (c) => {
   c.executionCtx.waitUntil(ingestCategory(c.env, 0));
   return c.json({ started: "real-image-ingestion", categories: CATEGORY_SLUGS.length });
 });
 
-app.get("/trigger/ingest-category", (c) => {
+app.get("/trigger/real-category", (c) => {
   const offset = parseInt(c.req.query("offset") || "0", 10);
   if (offset < 0 || offset >= CATEGORY_SLUGS.length) {
     return c.json({ error: "invalid offset" }, 400);
@@ -242,7 +242,7 @@ function chainNext(currentOffset: number): void {
     return;
   }
   console.log(`[Ingestion] Chaining to ${CATEGORY_SLUGS[next]} (${next + 1}/${CATEGORY_SLUGS.length})`);
-  fetch(`${WORKER_URL}/trigger/ingest-category?offset=${next}`).catch((err) => {
+  fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`).catch((err) => {
     console.error(`[Ingestion] Chain failed at ${next}: ${err}`);
   });
 }
