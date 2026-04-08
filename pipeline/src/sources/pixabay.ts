@@ -46,7 +46,7 @@ export async function fetchPixabayImages(
 ): Promise<SourceImage[]> {
   if (!apiKey || isCoolingDown("pixabay") || !tryUse("pixabay")) return [];
 
-  const perPage = Math.min(count, 200);
+  const perPage = Math.min(Math.max(count, 3), 200); // Pixabay minimum is 3
   const page = Math.floor(Math.random() * 10) + 1;
 
   const url = new URL("https://pixabay.com/api/");
