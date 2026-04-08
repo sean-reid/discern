@@ -11,7 +11,7 @@ function StatsContent() {
   const accuracyPct = Math.round(stats.accuracy * 100);
 
   return (
-    <div className="flex flex-col min-h-[100dvh] mx-auto w-full max-w-lg">
+    <div className="flex flex-col min-h-[100dvh] mx-auto w-full max-w-2xl">
       <Header />
 
       <div className="flex-1 px-5 py-6">

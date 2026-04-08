@@ -12,7 +12,7 @@ function PlayContent() {
   const stats = useGameStore((s) => s.stats);
 
   return (
-    <div className="flex flex-col h-[100dvh] mx-auto w-full max-w-lg">
+    <div className="flex flex-col h-[100dvh] mx-auto w-full max-w-2xl">
       <Header />
       <StatsBar stats={stats} />
       <SwipeStack />

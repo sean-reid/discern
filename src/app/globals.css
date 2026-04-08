@@ -19,6 +19,7 @@ body {
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
   line-height: 1.4;
+  overflow: hidden;
 }
 
 .scrollbar-none {
@@ -38,3 +39,4 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+

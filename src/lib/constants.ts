@@ -15,7 +15,7 @@ export const ELO_K_USER_PROVISIONAL = 48;
 // --- Swipe Mechanics ---
 export const SWIPE_THRESHOLD_PX = 120;
 export const SWIPE_VELOCITY_THRESHOLD = 500;
-export const RESULT_FLASH_DURATION_MS = 1200;
+export const RESULT_FLASH_DURATION_MS = 800;
 
 // --- Image Preloading ---
 export const PRELOAD_QUEUE_SIZE = 3;

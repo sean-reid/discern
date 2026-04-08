@@ -47,6 +47,7 @@ next-env.d.ts
 
 # claude
 .claude/
+PLAN.md
 
 # playwright
 test-results/
