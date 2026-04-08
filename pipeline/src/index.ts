@@ -100,7 +100,9 @@ const worker = {
         ctx.waitUntil(runEloRecalculation(env));
         break;
       case 5:
-        ctx.waitUntil(runImageRetirement(env));
+        // Retirement disabled — per-user history prevents repeats,
+        // no need to shrink library until it exceeds 5000+ images
+        console.log("Image retirement is disabled — re-enable when library exceeds 5000 images");
         break;
       case 12:
       case 20:
