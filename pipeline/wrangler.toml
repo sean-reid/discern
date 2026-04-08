@@ -1,0 +1,27 @@
+name = "discern-pipeline"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Cron triggers: image ingestion, elo recalc, retirement
+[triggers]
+crons = ["0 3 * * *", "0 4 * * *", "0 5 * * *"]
+
+# D1 database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "discern-db"
+database_id = "a25c2162-ff33-4f2d-b429-e4418f6a4339"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "discern-images"
+
+# Workers AI binding (free tier, no API key needed)
+[ai]
+binding = "AI"
+
+# Environment variables (set real values with `wrangler secret put`)
+[vars]
+UNSPLASH_ACCESS_KEY = ""
+PEXELS_API_KEY = ""

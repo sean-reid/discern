@@ -1,0 +1,22 @@
+{
+  "name": "discern-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250327.0",
+    "@types/node": "^20",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5",
+    "wrangler": "^4.14.0"
+  }
+}
