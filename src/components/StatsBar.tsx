@@ -13,7 +13,7 @@ export function StatsBar({ stats }: StatsBarProps) {
   const accuracyPct = Math.round(stats.accuracy * 100);
 
   return (
-    <div className="flex items-center justify-center gap-6 px-5 py-2">
+    <div className="flex items-center justify-center gap-6 px-5 py-3">
       <Stat label="elo" value={Math.round(stats.elo)} testId="elo-rating">
         <AnimatePresence mode="wait">
           {stats.eloDelta !== null && stats.eloDelta !== 0 && (
@@ -23,7 +23,7 @@ export function StatsBar({ stats }: StatsBarProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               onAnimationComplete={() => updateStats({ eloDelta: null })}
-              className={`text-[10px] font-medium ml-1 ${
+              className={`text-xs font-bold ml-1 ${
                 stats.eloDelta > 0 ? "text-green" : "text-red"
               }`}
             >
@@ -57,7 +57,7 @@ function Stat({
         {label}
       </span>
       <div className="flex items-baseline">
-        <span className="text-sm font-semibold text-fg" data-testid={testId}>
+        <span className="text-base font-bold text-fg tabular-nums" data-testid={testId}>
           {value}
         </span>
         {children}
