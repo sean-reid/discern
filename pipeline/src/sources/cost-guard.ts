@@ -24,7 +24,7 @@ const state: DailyCounters = {
 // Hard daily caps per source. These are conservative -
 // well below the actual free tier limits.
 const DAILY_CAPS: Record<string, number> = {
-  "workers-ai": 80,        // ~10K neurons/day, ~91 neurons/image at 768x1024 = ~109 max
+  "workers-ai": 45,        // ~10K neurons/day, ~206 neurons/image at 768x1024 @20 steps = ~48 max
   "huggingface": 100,      // unclear limit, stay conservative
   "pollinations": 100,     // no published limit, be respectful
   "unsplash": 40,          // 50/hr but we only run a few times/day

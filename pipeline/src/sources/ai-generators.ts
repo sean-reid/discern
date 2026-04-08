@@ -23,69 +23,86 @@ interface GeneratedImage {
   prompt: string;
 }
 
+// Camera and lens combos to make AI images mimic real photography
+const CAMERA_STYLES = [
+  "shot on Canon EOS R5, 85mm f/1.4, natural lighting",
+  "shot on Sony A7IV, 35mm f/1.8, available light",
+  "shot on Fujifilm X-T5, 56mm f/1.2, film simulation",
+  "shot on Nikon Z8, 50mm f/1.2, soft ambient light",
+  "Leica Q2, 28mm f/1.7, natural tones",
+  "iPhone 15 Pro, 24mm, computational photography",
+  "Hasselblad X2D, 80mm f/1.9, medium format look",
+];
+
+const NEGATIVE_PROMPT = "blurry, low quality, distorted, watermark, text, logo, cartoon, illustration, painting, drawing, render, CGI, plastic skin, extra fingers, deformed";
+
+function cameraStyle(): string {
+  return CAMERA_STYLES[Math.floor(Math.random() * CAMERA_STYLES.length)];
+}
+
 const PROMPTS: Record<string, string[]> = {
   people: [
-    "professional headshot of a person in natural lighting, shallow depth of field",
-    "candid street portrait of someone walking through a city, shot on 35mm film",
-    "close-up portrait with soft window light, neutral background",
-    "person sitting at a cafe reading a book, warm afternoon light",
-    "group of friends laughing together at a park, natural expressions",
-    "elderly person with weathered hands, black and white portrait",
-    "child playing in a field during golden hour, backlit",
+    "professional headshot of a 40-year-old man in a navy blazer, soft window light, shallow depth of field, slightly off-center composition",
+    "candid street portrait of a young woman walking through a European city, overcast day, 35mm film grain, looking away from camera",
+    "environmental portrait of a carpenter in their workshop, sawdust in the air, warm tungsten light, medium shot",
+    "elderly woman with silver hair sitting in a garden, reading glasses, dappled sunlight through leaves",
+    "group of coworkers having coffee outside an office building, natural expressions, mid-conversation",
+    "teenager skateboarding in a concrete park, frozen mid-trick, late afternoon backlight",
+    "chef preparing food in a professional kitchen, motion blur on hands, sharp face, overhead fluorescent light",
   ],
   landscapes: [
-    "misty mountain valley at sunrise, layers of fog between peaks",
-    "rocky coastline with crashing waves, long exposure smooth water",
-    "autumn forest path with red and orange leaves covering the ground",
-    "desert sand dunes at sunset with dramatic shadows",
-    "frozen lake reflecting snow-covered mountains, Iceland",
-    "rolling hills of green farmland under storm clouds",
-    "tropical waterfall surrounded by dense jungle vegetation",
+    "misty valley at dawn, layers of fog between forested ridges, Appalachian mountains, no sky visible",
+    "rocky coastline at low tide, tide pools in foreground, overcast sky, long exposure smoothed waves",
+    "single dirt road cutting through golden wheat fields, flat horizon, cumulus clouds, Midwest USA",
+    "dense moss-covered forest floor, fallen logs, Pacific Northwest rainforest, diffused overcast light",
+    "frozen lake at twilight, cracked ice patterns, distant snow-capped peaks reflected, Iceland",
+    "terraced rice paddies filled with water reflecting sunset, Bali, aerial perspective",
+    "desert canyon with layered red sandstone walls, narrow slot canyon, beam of light from above",
   ],
   animals: [
-    "red fox in a snowy forest, looking directly at camera",
-    "close-up of a barn owl in flight at dusk",
-    "sea turtle swimming through crystal clear ocean water",
-    "golden retriever running through a field, ears flapping",
-    "monarch butterfly resting on a purple wildflower, macro shot",
-    "wild horses galloping along a beach at sunset",
-    "tabby cat sitting on a windowsill watching rain",
+    "red fox standing in fresh snow, breath visible, early morning light, forest edge background",
+    "barn owl perched on a weathered fence post, soft bokeh background, overcast day",
+    "sea otter floating on its back in kelp, Monterey Bay, eye-level water shot",
+    "border collie mid-leap catching a frisbee, frozen motion, park setting, shallow depth of field",
+    "monarch butterfly on a milkweed plant, macro shot, morning dew visible on wings",
+    "humpback whale breaching, water droplets frozen mid-air, overcast ocean, telephoto compression",
+    "tabby cat curled up on a worn leather armchair, afternoon sunbeam, dust motes visible",
   ],
   food: [
-    "artisan sourdough bread sliced on a wooden cutting board, rustic kitchen",
-    "bowl of fresh ramen with egg, nori and scallions, steam rising",
-    "chocolate lava cake with a molten center, plated elegantly",
-    "fresh sushi platter on a dark slate plate, overhead shot",
-    "stack of fluffy pancakes with berries and maple syrup dripping",
-    "homemade pizza fresh from a wood-fired oven, cheese bubbling",
-    "colorful poke bowl with salmon, avocado and edamame",
+    "sourdough loaf with deep ear scoring on a wire cooling rack, rustic wooden counter, flour dusted, side lighting",
+    "steaming bowl of tonkotsu ramen, soft-boiled egg halved, chashu pork, chopsticks resting on bowl edge, overhead shot",
+    "molten chocolate fondant on a white plate, powdered sugar dusted, raspberry coulis swoosh, restaurant plating",
+    "hand-rolled sushi on a hinoki wood board, ginger and wasabi, natural daylight from left, 45-degree angle",
+    "stack of blueberry pancakes with melting butter pat, syrup mid-pour, diner setting, warm light",
+    "wood-fired margherita pizza on a peel, charred crust bubbles, San Marzano tomatoes visible, steam rising",
+    "farmers market display of heirloom tomatoes, various colors and sizes, morning sun, overhead perspective",
   ],
   architecture: [
-    "brutalist concrete building with geometric shadows, overcast sky",
-    "ornate cathedral interior with stained glass windows, light streaming in",
-    "modern glass skyscraper reflecting clouds, shot from below",
-    "narrow cobblestone alley in an old European town, laundry hanging",
-    "abandoned factory with broken windows and overgrown plants",
-    "Japanese temple surrounded by cherry blossom trees",
-    "art deco building facade with gold and teal details",
+    "brutalist concrete apartment block, geometric repeating balconies, flat overcast sky, shot from street level",
+    "gothic cathedral nave interior, ribbed vaults, late afternoon light through rose window, no people",
+    "modern glass office tower reflecting sunset clouds, shot from below with converging verticals",
+    "narrow cobblestone alley in Lisbon, azulejo tile facades, hanging laundry, warm afternoon light",
+    "abandoned textile mill, broken windows, vines growing through brick, moody overcast, wide angle",
+    "traditional Japanese machiya townhouse, wooden lattice facade, Kyoto backstreet, diffused light",
+    "art deco cinema entrance, neon marquee, terrazzo floor, evening blue hour, symmetrical composition",
   ],
   art: [
-    "oil painting of a stormy seascape in a gilded frame",
-    "abstract sculpture in a white gallery space, dramatic spotlighting",
-    "graffiti mural on a brick wall, vibrant colors, urban setting",
-    "ceramic pottery collection on wooden shelves, earth tones",
-    "large scale charcoal drawing of a human figure, art studio",
-    "stained glass window with geometric patterns, backlit by sun",
-    "watercolor painting of wildflowers, loose brushstrokes",
+    "oil painting of a stormy North Sea in an ornate gilded frame, gallery wall with spot lighting",
+    "large Cor-Ten steel sculpture in a sculpture garden, autumn trees background, overcast sky",
+    "vibrant street mural covering a three-story brick wall, spray paint texture visible, urban setting",
+    "potter's wheel with wet clay being shaped, hands in frame, studio with natural skylight",
+    "charcoal life drawing pinned to a studio wall, graphite smudges, artist's tools on table below",
+    "medieval stained glass window detail, lead came visible, backlit by overcast sky, interior view",
+    "printmaker pulling an etching from a press, ink on hands, workshop with hanging prints drying",
   ],
   street: [
-    "rainy city street at night with neon reflections on wet pavement",
-    "busy crosswalk in Tokyo with motion blur, overhead shot",
-    "street musician playing guitar on a quiet corner, warm light",
-    "vintage car parked on an empty road in a small town",
-    "market stall overflowing with colorful spices, vendor in background",
-    "cyclist riding through a puddle, water splashing, frozen motion",
-    "steam rising from a manhole cover on a cold morning, city sidewalk",
+    "rain-slicked city street at night, neon signs reflecting in puddles, lone pedestrian with umbrella, Tokyo",
+    "Shibuya crossing from above, rush hour, motion blur on pedestrians, sharp buildings, overcast",
+    "busker playing upright bass on a Paris metro platform, motion blur of passing train, warm tungsten",
+    "1960s muscle car parked on an empty desert highway, heat shimmer, vanishing point composition",
+    "spice market stall with pyramids of colorful powder, vendor weighing on brass scale, Istanbul",
+    "cyclist splashing through a puddle on a cobblestone street, frozen water droplets, Amsterdam",
+    "food cart with steam rising, night market, string lights overhead, customers waiting, Taipei",
   ],
 };
 
@@ -106,8 +123,10 @@ export async function generateWithPollinations(
   const prompt = pickPrompt(category);
   if (!prompt) return null;
 
-  const encodedPrompt = encodeURIComponent(prompt);
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=900&height=1200&nologo=true&seed=${Date.now()}`;
+  const fullPrompt = `${prompt}, ${cameraStyle()}, photorealistic, RAW photo`;
+  const encodedPrompt = encodeURIComponent(fullPrompt);
+  const encodedNegative = encodeURIComponent(NEGATIVE_PROMPT);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=900&height=1200&nologo=true&seed=${Date.now()}&negative=${encodedNegative}`;
 
   try {
     const response = await fetch(url, {
@@ -162,8 +181,9 @@ export async function generateWithWorkersAI(
     const result = await aiBinding.run(
       "@cf/black-forest-labs/flux-1-schnell",
       {
-        prompt: `${prompt}, photorealistic, high resolution, sharp detail`,
-        num_steps: 8,
+        prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
+        negative_prompt: NEGATIVE_PROMPT,
+        num_steps: 20,
         width: 768,
         height: 1024,
       }
@@ -234,9 +254,10 @@ export async function generateWithHuggingFace(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `${prompt}, photorealistic, sharp detail, high resolution, portrait orientation`,
+          inputs: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
           parameters: {
-            num_inference_steps: 8,
+            negative_prompt: NEGATIVE_PROMPT,
+            num_inference_steps: 20,
             width: 768,
             height: 1024,
           },
