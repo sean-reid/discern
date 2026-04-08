@@ -68,17 +68,28 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => c.json({ status: "ok", service: "discern-pipeline" }));
 app.get("/health", (c) => c.json({ status: "healthy" }));
 
-app.get("/trigger/real", (c) => {
-  c.executionCtx.waitUntil(ingestCategory(c.env, 0));
+app.get("/trigger/real", async (c) => {
+  await ingestCategory(c.env, 0);
+  if (CATEGORY_SLUGS.length > 1) {
+    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real-category?offset=1`));
+  }
   return c.json({ type: "real", status: "started" });
 });
 
-app.get("/trigger/real-category", (c) => {
+app.get("/trigger/real-category", async (c) => {
   const offset = parseInt(c.req.query("offset") || "0", 10);
   if (offset < 0 || offset >= CATEGORY_SLUGS.length) {
     return c.json({ error: "invalid offset" }, 400);
   }
-  c.executionCtx.waitUntil(ingestCategory(c.env, offset));
+  await ingestCategory(c.env, offset);
+  // Chain to next category after this one completes
+  const next = offset + 1;
+  if (next < CATEGORY_SLUGS.length) {
+    console.log(`[Ingestion] Chaining to ${CATEGORY_SLUGS[next]} (${next + 1}/${CATEGORY_SLUGS.length})`);
+    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`));
+  } else {
+    console.log("[Ingestion] All categories complete");
+  }
   return c.json({ type: "real", status: "started" });
 });
 
@@ -107,7 +118,7 @@ const worker = {
     switch (hour) {
       case 3:
       case 15:
-        ctx.waitUntil(ingestCategory(env, 0));
+        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/real`));
         break;
       case 4:
         ctx.waitUntil(runEloRecalculation(env));
@@ -144,7 +155,6 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   const categoryId = await getCategoryId(env.DB, categorySlug);
   if (!categoryId) {
     console.warn(`[Ingestion] Category "${categorySlug}" not found`);
-    chainNext(offset);
     return;
   }
 
@@ -232,21 +242,6 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   );
 
   console.log(`[Ingestion] ${categorySlug}: approved=${approved} rejected=${rejected} duplicate=${duplicate}`);
-  await chainNext(offset);
-}
-
-async function chainNext(currentOffset: number): Promise<void> {
-  const next = currentOffset + 1;
-  if (next >= CATEGORY_SLUGS.length) {
-    console.log("[Ingestion] All categories complete");
-    return;
-  }
-  console.log(`[Ingestion] Chaining to ${CATEGORY_SLUGS[next]} (${next + 1}/${CATEGORY_SLUGS.length})`);
-  try {
-    await fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`);
-  } catch (err) {
-    console.error(`[Ingestion] Chain failed at ${next}: ${err}`);
-  }
 }
 
 // ============================================================
