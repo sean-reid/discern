@@ -42,7 +42,7 @@ export function usePreloader() {
         width: data.image.width,
         height: data.image.height,
         category: data.image.category,
-        shownAt: data.session.shown_at,
+        shownAt: 0, // stamped when card is displayed, not preloaded
       };
     } catch {
       return null;
@@ -86,8 +86,14 @@ export function usePreloader() {
     [fillQueue]
   );
 
+  // Stamp shownAt when an image first becomes the current (displayed) image
+  const current = preloadQueue[0] ?? null;
+  if (current && current.shownAt === 0) {
+    current.shownAt = Date.now();
+  }
+
   return {
-    currentImage: preloadQueue[0] ?? null,
+    currentImage: current,
     nextImage: preloadQueue[1] ?? null,
     onImageConsumed,
     isLoading: preloadQueue.length === 0,

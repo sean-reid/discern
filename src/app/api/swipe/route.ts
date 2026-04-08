@@ -142,10 +142,13 @@ export async function POST(request: Request) {
     )
     .run();
 
-  // Update image stats
+  // Update image stats — skip Elo update during user's provisional period
+  // to prevent spam/testing from corrupting image difficulty ratings
+  const isProvisional = user.total_played < 30;
   const timesShown = image.times_shown + 1;
   const timesCorrect = image.times_correct + (correct ? 1 : 0);
   const timesFooled = image.times_fooled + (correct ? 0 : 1);
+  const imageElo = isProvisional ? image.elo_rating : elo.newImageElo;
 
   await db
     .prepare(
@@ -154,7 +157,7 @@ export async function POST(request: Request) {
          updated_at = datetime('now')
        WHERE id = ?`
     )
-    .bind(elo.newImageElo, timesShown, timesCorrect, timesFooled, image_id)
+    .bind(imageElo, timesShown, timesCorrect, timesFooled, image_id)
     .run();
 
   // Upsert daily stats
