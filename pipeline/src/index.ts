@@ -70,7 +70,7 @@ app.get("/health", (c) => c.json({ status: "healthy" }));
 
 app.get("/trigger/real", (c) => {
   c.executionCtx.waitUntil(ingestCategory(c.env, 0));
-  return c.json({ started: "real-image-ingestion", categories: CATEGORY_SLUGS.length });
+  return c.json({ type: "real", status: "started" });
 });
 
 app.get("/trigger/real-category", (c) => {
@@ -79,12 +79,12 @@ app.get("/trigger/real-category", (c) => {
     return c.json({ error: "invalid offset" }, 400);
   }
   c.executionCtx.waitUntil(ingestCategory(c.env, offset));
-  return c.json({ started: CATEGORY_SLUGS[offset], offset });
+  return c.json({ type: "real", status: "started" });
 });
 
 app.get("/trigger/ai", (c) => {
   c.executionCtx.waitUntil(runAiGeneration(c.env));
-  return c.json({ started: "ai-generation" });
+  return c.json({ type: "ai", status: "started" });
 });
 
 app.get("/trigger/elo", (c) => {
