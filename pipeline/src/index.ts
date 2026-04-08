@@ -98,24 +98,6 @@ app.get("/trigger/real", (c) => {
   return c.json({ type: "real", status: "started" });
 });
 
-app.get("/test/workers-ai", async (c) => {
-  const ai = c.env.AI;
-  if (!ai) return c.json({ error: "AI binding is falsy", type: typeof ai, value: String(ai) });
-  try {
-    const aiBinding = ai as { run(model: string, input: Record<string, unknown>): Promise<unknown> };
-    const result = await aiBinding.run("@cf/black-forest-labs/flux-1-schnell", {
-      prompt: "a red apple on a white table, studio lighting",
-      num_steps: 4,
-      width: 512,
-      height: 512,
-    });
-    const type = result instanceof ReadableStream ? "stream" : result instanceof ArrayBuffer ? "arraybuffer" : typeof result;
-    return c.json({ status: "ok", resultType: type });
-  } catch (err) {
-    return c.json({ error: String(err) });
-  }
-});
-
 app.get("/trigger/ai", (c) => {
   const approved = parseInt(c.req.query("approved") || "0", 10);
   const attempt = parseInt(c.req.query("attempt") || "0", 10);
