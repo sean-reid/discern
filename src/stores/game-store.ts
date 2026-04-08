@@ -82,6 +82,7 @@ export const useGameStore = create<GameState>()(
         stats: state.stats,
         selectedCategory: state.selectedCategory,
         hasSeenOnboarding: state.hasSeenOnboarding,
+        preloadQueue: state.preloadQueue,
       }),
     }
   )
