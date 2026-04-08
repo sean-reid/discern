@@ -68,29 +68,33 @@ const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => c.json({ status: "ok", service: "discern-pipeline" }));
 app.get("/health", (c) => c.json({ status: "healthy" }));
 
-app.get("/trigger/real", async (c) => {
-  await ingestCategory(c.env, 0);
-  if (CATEGORY_SLUGS.length > 1) {
-    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real-category?offset=1`));
-  }
-  return c.json({ type: "real", status: "started" });
-});
+// Process categories in batches to stay under 50 subrequest limit.
+// Batch 0 = first 4 categories, batch 1 = remaining 3.
+const BATCH_SIZE = 3;
 
-app.get("/trigger/real-category", async (c) => {
-  const offset = parseInt(c.req.query("offset") || "0", 10);
-  if (offset < 0 || offset >= CATEGORY_SLUGS.length) {
-    return c.json({ error: "invalid offset" }, 400);
+app.get("/trigger/real", async (c) => {
+  const batch = parseInt(c.req.query("batch") || "0", 10);
+  const start = batch * BATCH_SIZE;
+  const end = Math.min(start + BATCH_SIZE, CATEGORY_SLUGS.length);
+
+  if (start >= CATEGORY_SLUGS.length) {
+    return c.json({ type: "real", status: "done" });
   }
-  await ingestCategory(c.env, offset);
-  // Chain to next category after this one completes
-  const next = offset + 1;
-  if (next < CATEGORY_SLUGS.length) {
-    console.log(`[Ingestion] Chaining to ${CATEGORY_SLUGS[next]} (${next + 1}/${CATEGORY_SLUGS.length})`);
-    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`));
+
+  for (let i = start; i < end; i++) {
+    await ingestCategory(c.env, i);
+  }
+
+  // Chain to next batch if there are more categories
+  if (end < CATEGORY_SLUGS.length) {
+    const nextBatch = batch + 1;
+    console.log(`[Ingestion] Chaining to batch ${nextBatch}`);
+    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real?batch=${nextBatch}`));
   } else {
     console.log("[Ingestion] All categories complete");
   }
-  return c.json({ type: "real", status: "started" });
+
+  return c.json({ type: "real", status: "started", batch });
 });
 
 app.get("/trigger/ai", (c) => {
