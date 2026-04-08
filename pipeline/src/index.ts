@@ -431,7 +431,11 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
       const idx = (start + g) % generators.length;
       console.log(`[AI-Gen] Attempt ${attempts}: trying ${names[idx]} for ${category}`);
       generated = await generators[idx]();
-      if (generated) break;
+      if (generated) {
+        const kb = Math.round(generated.data.byteLength / 1024);
+        console.log(`[AI-Gen] ${names[idx]} generated ${kb}KB image (${generated.model})`);
+        break;
+      }
       console.log(`[AI-Gen] ${names[idx]} returned nothing`);
     }
 
@@ -444,6 +448,7 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
     try {
       const validation = validateImage(generated.data);
       if (!validation.valid) {
+        console.log(`[AI-Gen] Rejected: ${validation.reason}`);
         rejected++;
         continue;
       }
@@ -481,7 +486,7 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
       });
 
       approved++;
-      console.log(`[AI-Gen] Generated ${imageId} (${generated.model}, ${category})`);
+      console.log(`[AI-Gen] Saved ${imageId} (${generated.model}, ${category}, ${validation.width}x${validation.height}) [${approved}/${AI_ONLY_TARGET}]`);
     } catch (err) {
       console.error(`[AI-Gen] Error: ${err}`);
       rejected++;
