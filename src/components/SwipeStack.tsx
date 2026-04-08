@@ -15,35 +15,51 @@ export function SwipeStack() {
     correct: boolean;
     isAi: boolean;
   } | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
   const [dragAbs, setDragAbs] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
+
+  // Monotonic counter — ensures stale API responses don't regress stats
+  const swipeCounter = useRef(0);
+  const lastAppliedCounter = useRef(0);
 
   const { currentImage, nextImage, onImageConsumed, isLoading } =
     usePreloader();
 
-  // API submission — called after card exit animation
+  // Non-blocking API submission — fires immediately on swipe commit
   const submitSwipe = useCallback(
-    async (direction: "left" | "right") => {
+    (direction: "left" | "right") => {
       if (!currentImage || !deviceId) return;
 
+      const thisSwipe = ++swipeCounter.current;
+      const imageId = currentImage.id;
+      const responseMs = Date.now() - currentImage.shownAt;
+      const shownAt = currentImage.shownAt;
       const guessedAi = direction === "left";
 
-      try {
-        const res = await fetch("/api/swipe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            device_id: deviceId,
-            image_id: currentImage.id,
-            guessed_ai: guessedAi,
-            response_ms: Date.now() - currentImage.shownAt,
-            shown_at: currentImage.shownAt,
-          }),
-        });
+      // Advance queue immediately — next card becomes interactive
+      onImageConsumed(imageId);
+      setDragAbs(0);
 
-        if (res.ok) {
-          const data: SwipeResponse = await res.json();
+      // Fire API call async — don't block
+      fetch("/api/swipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          device_id: deviceId,
+          image_id: imageId,
+          guessed_ai: guessedAi,
+          response_ms: responseMs,
+          shown_at: shownAt,
+        }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: SwipeResponse | null) => {
+          if (!data) return;
+
+          // Only apply if this is the latest or newest response
+          if (thisSwipe < lastAppliedCounter.current) return;
+          lastAppliedCounter.current = thisSwipe;
+
           setShowResult({ correct: data.correct, isAi: data.is_ai });
           updateStats({
             elo: data.user.elo_rating,
@@ -54,58 +70,40 @@ export function SwipeStack() {
             bestStreak: data.user.best_streak,
             accuracy: data.user.accuracy,
           });
-        }
-      } catch {
-        // Network error — skip result, move to next image
-        onImageConsumed(currentImage.id);
-        setIsSwiping(false);
-      }
+        })
+        .catch(() => {
+          // Network error — silently skip
+        });
     },
     [currentImage, deviceId, updateStats, onImageConsumed]
   );
 
-  // Initiate swipe — guards then triggers card fly-out animation
-  const initiateSwipe = useCallback(
-    (direction: "left" | "right") => {
-      if (!currentImage || !deviceId || isSwiping || showResult) return;
-      setIsSwiping(true);
-      setDragAbs(1);
-      cardRef.current?.flyOut(direction);
-    },
-    [currentImage, deviceId, isSwiping, showResult]
-  );
-
-  const handleResultComplete = useCallback(() => {
-    if (currentImage) {
-      onImageConsumed(currentImage.id);
-    }
-    setShowResult(null);
-    setIsSwiping(false);
-    setDragAbs(0);
-  }, [currentImage, onImageConsumed]);
-
-  // Auto-advance after result glow
+  // Auto-clear result glow
   useEffect(() => {
     if (!showResult) return;
-    const timer = setTimeout(handleResultComplete, RESULT_FLASH_DURATION_MS);
+    const timer = setTimeout(() => setShowResult(null), RESULT_FLASH_DURATION_MS);
     return () => clearTimeout(timer);
-  }, [showResult, handleResultComplete]);
+  }, [showResult]);
 
   // Keyboard controls
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (!currentImage || !deviceId) return;
+
       if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
         e.preventDefault();
-        initiateSwipe("left");
+        setDragAbs(1);
+        cardRef.current?.flyOut("left");
       } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
         e.preventDefault();
-        initiateSwipe("right");
+        setDragAbs(1);
+        cardRef.current?.flyOut("right");
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [initiateSwipe]);
+  }, [currentImage, deviceId]);
 
   if (isLoading) {
     return (
@@ -135,7 +133,7 @@ export function SwipeStack() {
         className="relative flex-1 mx-4 my-2 rounded-xl"
         data-testid="swipe-card"
       >
-        {/* Result glow — single clean pulse, green=correct, red=wrong */}
+        {/* Result glow — non-blocking, fades independently */}
         <AnimatePresence>
           {showResult && (
             <motion.div
@@ -147,7 +145,7 @@ export function SwipeStack() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
             />
           )}
         </AnimatePresence>
@@ -162,17 +160,15 @@ export function SwipeStack() {
           />
         )}
 
-        {/* Current card (interactive) */}
-        {!showResult && (
-          <SwipeCard
-            ref={cardRef}
-            key={currentImage.id}
-            imageUrl={currentImage.url}
-            isTop={true}
-            onSwipe={submitSwipe}
-            onDragProgress={setDragAbs}
-          />
-        )}
+        {/* Current card — always interactive, not gated by showResult */}
+        <SwipeCard
+          ref={cardRef}
+          key={currentImage.id}
+          imageUrl={currentImage.url}
+          isTop={true}
+          onSwipe={submitSwipe}
+          onDragProgress={setDragAbs}
+        />
       </div>
 
       {/* Bottom safe area spacer on mobile */}

@@ -73,10 +73,10 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
       onDragProgress?.(Math.min(1, p));
     });
 
-    async function flyOut(direction: "left" | "right") {
+    function flyOut(direction: "left" | "right") {
       const target = direction === "left" ? -600 : 600;
-      await animate(scope.current, { x: target, opacity: 0 }, { duration: 0.25 });
       onSwipe(direction);
+      animate(scope.current, { x: target, opacity: 0 }, { duration: 0.15 });
     }
 
     useImperativeHandle(ref, () => ({ flyOut }));

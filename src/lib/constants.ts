@@ -15,10 +15,10 @@ export const ELO_K_USER_PROVISIONAL = 48;
 // --- Swipe Mechanics ---
 export const SWIPE_THRESHOLD_PX = 120;
 export const SWIPE_VELOCITY_THRESHOLD = 500;
-export const RESULT_FLASH_DURATION_MS = 800;
+export const RESULT_FLASH_DURATION_MS = 400;
 
 // --- Image Preloading ---
-export const PRELOAD_QUEUE_SIZE = 3;
+export const PRELOAD_QUEUE_SIZE = 5;
 export const IMAGE_BASE_URL =
   process.env.NEXT_PUBLIC_IMAGE_BASE_URL || "/api/image-proxy";
 
