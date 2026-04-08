@@ -126,7 +126,7 @@ export async function generateWithPollinations(
   const fullPrompt = `${prompt}, ${cameraStyle()}, photorealistic, RAW photo`;
   const encodedPrompt = encodeURIComponent(fullPrompt);
   const encodedNegative = encodeURIComponent(NEGATIVE_PROMPT);
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=900&height=1200&nologo=true&seed=${Date.now()}&negative=${encodedNegative}`;
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${Date.now()}&negative=${encodedNegative}`;
 
   try {
     const response = await fetch(url, {
@@ -183,7 +183,7 @@ export async function generateWithWorkersAI(
       {
         prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
         num_steps: 8,
-        width: 768,
+        width: 1024,
         height: 1024,
       }
     );
@@ -256,7 +256,7 @@ export async function generateWithHuggingFace(
           inputs: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
           parameters: {
             num_inference_steps: 8,
-            width: 768,
+            width: 1024,
             height: 1024,
           },
         }),
