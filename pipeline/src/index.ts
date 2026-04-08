@@ -280,10 +280,15 @@ async function runImageIngestion(env: Env): Promise<void> {
   // --- AI Image Generation ---
   // Generate AI images to maintain a balanced real/AI ratio.
   // Uses Pollinations.ai (free, no key) and Cloudflare Workers AI (free tier).
-  const AI_IMAGES_PER_RUN = 28;
-  console.log(`[Ingestion] Generating ${AI_IMAGES_PER_RUN} AI images`);
+  const AI_TARGET = 28;
+  const AI_MAX_ATTEMPTS = 60;
+  let aiApproved = 0;
+  let aiAttempts = 0;
+  console.log(`[Ingestion] Generating AI images (target: ${AI_TARGET}, max attempts: ${AI_MAX_ATTEMPTS})`);
 
-  for (let i = 0; i < AI_IMAGES_PER_RUN; i++) {
+  while (aiApproved < AI_TARGET && aiAttempts < AI_MAX_ATTEMPTS) {
+    const i = aiAttempts;
+    aiAttempts++;
     const category = randomCategory();
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
@@ -397,15 +402,19 @@ async function runImageIngestion(env: Env): Promise<void> {
 // AI-Only Generation (runs 3x daily to keep real/AI balanced)
 // ============================================================
 
-const AI_ONLY_BATCH_SIZE = 20;
+const AI_ONLY_TARGET = 20;
+const AI_ONLY_MAX_ATTEMPTS = 50;
 
 async function runAiOnlyGeneration(env: Env): Promise<void> {
-  console.log(`[AI-Gen] Starting AI-only batch (${AI_ONLY_BATCH_SIZE} images)`);
+  console.log(`[AI-Gen] Starting AI-only batch (target: ${AI_ONLY_TARGET}, max attempts: ${AI_ONLY_MAX_ATTEMPTS})`);
 
   let approved = 0;
   let rejected = 0;
+  let attempts = 0;
 
-  for (let i = 0; i < AI_ONLY_BATCH_SIZE; i++) {
+  while (approved < AI_ONLY_TARGET && attempts < AI_ONLY_MAX_ATTEMPTS) {
+    const i = attempts;
+    attempts++;
     const category = randomCategory();
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
@@ -477,7 +486,7 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
     }
   }
 
-  console.log(`[AI-Gen] Batch complete: approved=${approved} rejected=${rejected}`);
+  console.log(`[AI-Gen] Batch complete: approved=${approved}/${AI_ONLY_TARGET} in ${attempts} attempts (${rejected} rejected)`);
 }
 
 // ============================================================
