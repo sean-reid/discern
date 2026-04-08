@@ -293,22 +293,21 @@ async function runImageIngestion(env: Env): Promise<void> {
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
 
+    // Try each generator in order, skip to next on failure
+    const generators = [
+      () => generateWithWorkersAI(env.AI, category),
+      () => generateWithHuggingFace(env.HF_TOKEN, category),
+      () => generateWithPollinations(category),
+    ];
+    // Rotate starting position for diversity
+    const start = i % generators.length;
+
     let generated = null;
-
-    // Rotate between all 3 generators for model diversity
-    const generatorIndex = i % 3;
-    if (generatorIndex === 0) {
-      generated = await generateWithWorkersAI(env.AI, category);
-    } else if (generatorIndex === 1) {
-      generated = await generateWithHuggingFace(env.HF_TOKEN, category);
-    } else {
-      generated = await generateWithPollinations(category);
+    for (let g = 0; g < generators.length; g++) {
+      const idx = (start + g) % generators.length;
+      generated = await generators[idx]();
+      if (generated) break;
     }
-
-    // Fall back through the chain if one fails
-    if (!generated) generated = await generateWithWorkersAI(env.AI, category);
-    if (!generated) generated = await generateWithHuggingFace(env.HF_TOKEN, category);
-    if (!generated) generated = await generateWithPollinations(category);
 
     if (!generated) {
       totalRejected++;
@@ -419,20 +418,19 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
 
+    const generators = [
+      () => generateWithWorkersAI(env.AI, category),
+      () => generateWithHuggingFace(env.HF_TOKEN, category),
+      () => generateWithPollinations(category),
+    ];
+    const start = i % generators.length;
+
     let generated = null;
-
-    const generatorIndex = i % 3;
-    if (generatorIndex === 0) {
-      generated = await generateWithWorkersAI(env.AI, category);
-    } else if (generatorIndex === 1) {
-      generated = await generateWithHuggingFace(env.HF_TOKEN, category);
-    } else {
-      generated = await generateWithPollinations(category);
+    for (let g = 0; g < generators.length; g++) {
+      const idx = (start + g) % generators.length;
+      generated = await generators[idx]();
+      if (generated) break;
     }
-
-    if (!generated) generated = await generateWithWorkersAI(env.AI, category);
-    if (!generated) generated = await generateWithHuggingFace(env.HF_TOKEN, category);
-    if (!generated) generated = await generateWithPollinations(category);
 
     if (!generated) {
       rejected++;
