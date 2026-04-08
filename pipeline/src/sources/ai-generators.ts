@@ -230,7 +230,7 @@ export async function generateWithHuggingFace(
   // Rotate between free inference models for diversity
   const models = [
     "black-forest-labs/FLUX.1-schnell",
-    "stabilityai/stable-diffusion-3.5-large",
+    "black-forest-labs/FLUX.1-dev",
   ];
   const model = models[Math.floor(Math.random() * models.length)];
 
