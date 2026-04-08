@@ -5,6 +5,7 @@
 // 03:00 UTC -- Image ingestion from Unsplash/Pexels + AI generation
 // 04:00 UTC -- Nightly Elo recalculation
 // 05:00 UTC -- Image retirement
+// 12:00, 20:00 UTC -- AI-only generation to maintain balance
 // ============================================================
 
 import { Hono } from "hono";
@@ -101,9 +102,8 @@ const worker = {
       case 5:
         ctx.waitUntil(runImageRetirement(env));
         break;
-      case 9:
-      case 15:
-      case 21:
+      case 12:
+      case 20:
         ctx.waitUntil(runAiOnlyGeneration(env));
         break;
       default:

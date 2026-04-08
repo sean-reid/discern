@@ -12,7 +12,7 @@
     "build:worker": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "deploy:pipeline": "cd pipeline && npx wrangler deploy",
+    "deploy:pipeline": "cd pipeline && npx wrangler deploy --config wrangler.toml",
     "deploy:migrations": "for f in migrations/*.sql; do npx wrangler d1 execute discern-db --remote --file=$f; done && cd pipeline && for f in ../migrations/*.sql; do npx wrangler d1 execute discern-db --remote --file=$f --config wrangler.toml; done",
     "start": "next start",
     "lint": "eslint",
