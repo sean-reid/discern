@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { v4 as uuidv4 } from "uuid";
 import { fetchUnsplashImages } from "./sources/unsplash";
 import { fetchPexelsImages } from "./sources/pexels";
+import { fetchPixabayImages } from "./sources/pixabay";
 // Flickr API requires Pro subscription, removed
 import {
   generateWithPollinations,
@@ -39,6 +40,7 @@ interface Env {
   AI?: unknown; // Cloudflare Workers AI binding (free tier)
   UNSPLASH_ACCESS_KEY: string;
   PEXELS_API_KEY: string;
+  PIXABAY_API_KEY: string;
   HF_TOKEN?: string; // Hugging Face API token (free tier)
 }
 
@@ -172,6 +174,19 @@ async function runImageIngestion(env: Env): Promise<void> {
       errors.push(msg);
     }
 
+    try {
+      const pixabayImages = await fetchPixabayImages(
+        env.PIXABAY_API_KEY,
+        query,
+        IMAGES_PER_SOURCE,
+        categorySlug
+      );
+      sourceResults.push({ source: "pixabay", images: pixabayImages });
+    } catch (err) {
+      const msg = `Pixabay error for "${query}": ${err}`;
+      console.error(msg);
+      errors.push(msg);
+    }
 
     // Process each image
     for (const { source, images } of sourceResults) {
