@@ -74,6 +74,11 @@ app.get("/trigger/retire", (c) => {
   return c.json({ started: "image-retirement" });
 });
 
+app.get("/trigger/ai", (c) => {
+  c.executionCtx.waitUntil(runAiOnlyGeneration(c.env));
+  return c.json({ started: "ai-generation" });
+});
+
 // ---- Cron handler ----
 
 export default {
@@ -95,6 +100,11 @@ export default {
         break;
       case 5:
         ctx.waitUntil(runImageRetirement(env));
+        break;
+      case 9:
+      case 15:
+      case 21:
+        ctx.waitUntil(runAiOnlyGeneration(env));
         break;
       default:
         console.log(`No task configured for hour ${hour} UTC`);
@@ -118,7 +128,7 @@ const CATEGORY_QUERIES: Record<string, string[]> = {
 };
 
 // How many images to request per source per category (keep within free tiers)
-const IMAGES_PER_SOURCE = 5;
+const IMAGES_PER_SOURCE = 2;
 
 async function runImageIngestion(env: Env): Promise<void> {
   const batchId = uuidv4();
@@ -270,7 +280,7 @@ async function runImageIngestion(env: Env): Promise<void> {
   // --- AI Image Generation ---
   // Generate AI images to maintain a balanced real/AI ratio.
   // Uses Pollinations.ai (free, no key) and Cloudflare Workers AI (free tier).
-  const AI_IMAGES_PER_RUN = 10;
+  const AI_IMAGES_PER_RUN = 28;
   console.log(`[Ingestion] Generating ${AI_IMAGES_PER_RUN} AI images`);
 
   for (let i = 0; i < AI_IMAGES_PER_RUN; i++) {
@@ -381,6 +391,93 @@ async function runImageIngestion(env: Env): Promise<void> {
       `fetched=${totalFetched} approved=${totalApproved} ` +
       `rejected=${totalRejected} duplicate=${totalDuplicate}`
   );
+}
+
+// ============================================================
+// AI-Only Generation (runs 3x daily to keep real/AI balanced)
+// ============================================================
+
+const AI_ONLY_BATCH_SIZE = 20;
+
+async function runAiOnlyGeneration(env: Env): Promise<void> {
+  console.log(`[AI-Gen] Starting AI-only batch (${AI_ONLY_BATCH_SIZE} images)`);
+
+  let approved = 0;
+  let rejected = 0;
+
+  for (let i = 0; i < AI_ONLY_BATCH_SIZE; i++) {
+    const category = randomCategory();
+    const categoryId = await getCategoryId(env.DB, category);
+    if (!categoryId) continue;
+
+    let generated = null;
+
+    const generatorIndex = i % 3;
+    if (generatorIndex === 0) {
+      generated = await generateWithWorkersAI(env.AI, category);
+    } else if (generatorIndex === 1) {
+      generated = await generateWithHuggingFace(env.HF_TOKEN, category);
+    } else {
+      generated = await generateWithPollinations(category);
+    }
+
+    if (!generated) generated = await generateWithWorkersAI(env.AI, category);
+    if (!generated) generated = await generateWithHuggingFace(env.HF_TOKEN, category);
+    if (!generated) generated = await generateWithPollinations(category);
+
+    if (!generated) {
+      rejected++;
+      continue;
+    }
+
+    try {
+      const validation = validateImage(generated.data);
+      if (!validation.valid) {
+        rejected++;
+        continue;
+      }
+
+      const hash = await computeContentHash(generated.data);
+      const dup = await isDuplicate(env.DB, hash);
+      if (dup) continue;
+
+      const imageId = uuidv4();
+      const ext = validation.format === "jpeg" ? "jpg" : validation.format;
+      const r2Key = `ai/${category}/${imageId}.${ext}`;
+
+      await env.R2.put(r2Key, generated.data, {
+        httpMetadata: {
+          contentType: `image/${validation.format === "jpeg" ? "jpeg" : validation.format}`,
+        },
+      });
+
+      await insertImage(env.DB, {
+        id: imageId,
+        r2Key,
+        isAi: true,
+        categoryId,
+        source: generated.model,
+        sourceId: null,
+        sourceUrl: null,
+        photographer: null,
+        aiModel: generated.model,
+        phash: hash,
+        width: validation.width,
+        height: validation.height,
+        fileSizeBytes: validation.fileSize,
+        exifConfidence: 0,
+        status: "approved",
+      });
+
+      approved++;
+      console.log(`[AI-Gen] Generated ${imageId} (${generated.model}, ${category})`);
+    } catch (err) {
+      console.error(`[AI-Gen] Error: ${err}`);
+      rejected++;
+    }
+  }
+
+  console.log(`[AI-Gen] Batch complete: approved=${approved} rejected=${rejected}`);
 }
 
 // ============================================================

@@ -2,9 +2,13 @@ name = "discern-pipeline"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
-# Cron triggers: image ingestion, elo recalc, retirement
+# Cron triggers
+# 03:00 - Full ingestion (real + AI images)
+# 04:00 - Elo recalculation
+# 05:00 - Image retirement
+# 09:00, 15:00, 21:00 - AI-only generation to maintain balance
 [triggers]
-crons = ["0 3 * * *", "0 4 * * *", "0 5 * * *"]
+crons = ["0 3 * * *", "0 4 * * *", "0 5 * * *", "0 9 * * *", "0 15 * * *", "0 21 * * *"]
 
 # D1 database binding
 [[d1_databases]]
