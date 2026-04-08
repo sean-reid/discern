@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Game flow - happy path", () => {
   test("play 5 rounds and verify stats update", async ({ page }) => {
-    await page.goto("/play");
+    await page.goto("/");
 
     // Wait for the first image card to appear
     const swipeCard = page.getByTestId("swipe-card");

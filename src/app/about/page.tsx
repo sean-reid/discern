@@ -1,5 +1,4 @@
 import { Header } from "@/components/Header";
-import Link from "next/link";
 
 export default function AboutPage() {
   return (
@@ -58,12 +57,6 @@ export default function AboutPage() {
           </p>
         </section>
 
-        <Link
-          href="/play"
-          className="block w-full py-3 text-center bg-fg text-bg rounded-lg font-semibold text-sm transition-transform active:scale-[0.98]"
-        >
-          Play
-        </Link>
       </div>
     </div>
   );
