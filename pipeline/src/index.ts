@@ -81,7 +81,7 @@ app.get("/trigger/ai", (c) => {
 
 // ---- Cron handler ----
 
-export default {
+const worker = {
   fetch: app.fetch,
 
   async scheduled(
@@ -111,6 +111,8 @@ export default {
     }
   },
 };
+
+export default worker;
 
 // ============================================================
 // 03:00 UTC -- Image Ingestion
@@ -282,7 +284,7 @@ async function runImageIngestion(env: Env): Promise<void> {
   // Uses Pollinations.ai (free, no key) and Cloudflare Workers AI (free tier).
   const AI_TARGET = 28;
   const AI_MAX_ATTEMPTS = 60;
-  let aiApproved = 0;
+  const aiApproved = 0;
   let aiAttempts = 0;
   console.log(`[Ingestion] Generating AI images (target: ${AI_TARGET}, max attempts: ${AI_MAX_ATTEMPTS})`);
 

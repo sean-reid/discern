@@ -15,7 +15,7 @@
 // ============================================================
 
 import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
-import { tryUse, remaining } from "./cost-guard";
+import { tryUse } from "./cost-guard";
 
 interface GeneratedImage {
   data: ArrayBuffer;

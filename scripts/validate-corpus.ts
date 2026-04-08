@@ -59,7 +59,15 @@ const shouldFix = process.argv.includes("--fix");
 
 // ---- D1 operations ----
 
-async function d1Query(sql: string, params: any[] = []): Promise<any> {
+interface D1Result {
+  results?: Array<Record<string, unknown>>;
+}
+
+interface D1Response {
+  result?: D1Result[];
+}
+
+async function d1Query(sql: string, params: (string | number | null)[] = []): Promise<D1Result | null> {
   if (!D1_API_URL || !D1_API_TOKEN || !D1_DATABASE_ID) {
     console.error("D1 API not configured.");
     return null;
@@ -81,11 +89,13 @@ async function d1Query(sql: string, params: any[] = []): Promise<any> {
     throw new Error(`D1 API error ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  const data: any = await res.json();
+  const data = (await res.json()) as D1Response;
   return data.result?.[0] || null;
 }
 
 // ---- R2 operations ----
+
+type S3ClientInstance = Awaited<ReturnType<typeof getR2Client>>;
 
 async function getR2Client() {
   const { S3Client } = await import("@aws-sdk/client-s3");
@@ -99,7 +109,7 @@ async function getR2Client() {
   });
 }
 
-async function checkR2FileExists(client: any, key: string): Promise<boolean> {
+async function checkR2FileExists(client: S3ClientInstance, key: string): Promise<boolean> {
   try {
     const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
     await client.send(
@@ -114,7 +124,7 @@ async function checkR2FileExists(client: any, key: string): Promise<boolean> {
   }
 }
 
-async function downloadR2File(client: any, key: string): Promise<Buffer | null> {
+async function downloadR2File(client: S3ClientInstance, key: string): Promise<Buffer | null> {
   try {
     const { GetObjectCommand } = await import("@aws-sdk/client-s3");
     const response = await client.send(
@@ -174,7 +184,7 @@ async function main(): Promise<void> {
      ORDER BY created_at DESC`
   );
 
-  const images: ImageRecord[] = result?.results || [];
+  const images = (result?.results || []) as unknown as ImageRecord[];
   console.log(`Found ${images.length} images in database.\n`);
 
   if (images.length === 0) {
@@ -195,10 +205,8 @@ async function main(): Promise<void> {
   }
 
   // Check for duplicate hashes
-  let duplicateCount = 0;
   for (const [hash, ids] of hashMap.entries()) {
     if (ids.length > 1) {
-      duplicateCount += ids.length - 1;
       for (const id of ids.slice(1)) {
         issues.push({
           imageId: id,
@@ -211,7 +219,7 @@ async function main(): Promise<void> {
   }
 
   // Check R2 files and dimensions
-  let r2Client: any = null;
+  let r2Client: S3ClientInstance | null = null;
   if (R2_ENDPOINT && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY) {
     r2Client = await getR2Client();
   } else {

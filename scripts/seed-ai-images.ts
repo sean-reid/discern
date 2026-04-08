@@ -228,7 +228,15 @@ async function uploadToR2(key: string, data: Buffer, contentType: string): Promi
 
 // ---- D1 operations via REST API ----
 
-async function d1Query(sql: string, params: any[] = []): Promise<any> {
+interface D1Result {
+  results?: Array<Record<string, unknown>>;
+}
+
+interface D1Response {
+  result?: D1Result[];
+}
+
+async function d1Query(sql: string, params: (string | number | null)[] = []): Promise<D1Result | null> {
   if (!D1_API_URL || !D1_API_TOKEN || !D1_DATABASE_ID) {
     console.error("D1 API not configured.");
     return null;
@@ -250,7 +258,7 @@ async function d1Query(sql: string, params: any[] = []): Promise<any> {
     throw new Error(`D1 API error ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  const data: any = await res.json();
+  const data = (await res.json()) as D1Response;
   return data.result?.[0] || null;
 }
 
@@ -259,7 +267,7 @@ async function getCategoryIdLocal(slug: string): Promise<number | null> {
     "SELECT id FROM categories WHERE slug = ? AND active = 1",
     [slug]
   );
-  return result?.results?.[0]?.id ?? null;
+  return (result?.results?.[0]?.id as number | undefined) ?? null;
 }
 
 async function hashExistsLocal(hash: string): Promise<boolean> {

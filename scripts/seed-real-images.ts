@@ -15,7 +15,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import * as crypto from "crypto";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 
@@ -104,7 +103,12 @@ async function fetchUnsplash(query: string, count: number): Promise<SourceImage[
     return [];
   }
 
-  const photos: any[] = await res.json();
+  const photos = (await res.json()) as Array<{
+    urls: { regular: string };
+    user: { name: string };
+    id: string;
+    links: { html: string };
+  }>;
   return photos.map((p) => ({
     url: p.urls.regular,
     photographer: p.user.name,
@@ -131,8 +135,15 @@ async function fetchPexels(query: string, count: number): Promise<SourceImage[]>
     return [];
   }
 
-  const data: any = await res.json();
-  return (data.photos || []).map((p: any) => ({
+  const data = (await res.json()) as {
+    photos?: Array<{
+      src: { large2x: string };
+      photographer: string;
+      id: number;
+      url: string;
+    }>;
+  };
+  return (data.photos || []).map((p) => ({
     url: p.src.large2x,
     photographer: p.photographer,
     sourceId: String(p.id),
@@ -163,13 +174,22 @@ async function fetchFlickr(query: string, count: number): Promise<SourceImage[]>
     return [];
   }
 
-  const data: any = await res.json();
+  interface FlickrPhoto {
+    url_l?: string;
+    ownername?: string;
+    owner: string;
+    id: string;
+  }
+  const data = (await res.json()) as {
+    stat: string;
+    photos?: { photo?: FlickrPhoto[] };
+  };
   if (data.stat !== "ok") return [];
 
   return (data.photos?.photo || [])
-    .filter((p: any) => p.url_l)
-    .map((p: any) => ({
-      url: p.url_l,
+    .filter((p) => p.url_l)
+    .map((p) => ({
+      url: p.url_l!,
       photographer: p.ownername || p.owner,
       sourceId: p.id,
       sourceUrl: `https://www.flickr.com/photos/${p.owner}/${p.id}`,
@@ -238,9 +258,6 @@ async function uploadToR2(key: string, data: Buffer, contentType: string): Promi
     return false;
   }
 
-  const url = `${R2_ENDPOINT}/${R2_BUCKET}/${key}`;
-  const date = new Date().toUTCString();
-
   // Simple S3 PUT -- in practice you may want to use an S3 SDK
   // For this script, we use the @aws-sdk/client-s3 pattern via fetch
   // with presigned or basic auth. For simplicity, using the S3 REST API.
@@ -272,7 +289,15 @@ async function uploadToR2(key: string, data: Buffer, contentType: string): Promi
 
 // ---- D1 operations via REST API ----
 
-async function d1Query(sql: string, params: any[] = []): Promise<any> {
+interface D1Result {
+  results?: Array<Record<string, unknown>>;
+}
+
+interface D1Response {
+  result?: D1Result[];
+}
+
+async function d1Query(sql: string, params: (string | number | null)[] = []): Promise<D1Result | null> {
   if (!D1_API_URL || !D1_API_TOKEN || !D1_DATABASE_ID) {
     console.error(
       "D1 API not configured. Set D1_API_URL, D1_API_TOKEN, D1_DATABASE_ID in .env"
@@ -296,7 +321,7 @@ async function d1Query(sql: string, params: any[] = []): Promise<any> {
     throw new Error(`D1 API error ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  const data: any = await res.json();
+  const data = (await res.json()) as D1Response;
   return data.result?.[0] || null;
 }
 
@@ -305,7 +330,7 @@ async function getCategoryIdLocal(slug: string): Promise<number | null> {
     "SELECT id FROM categories WHERE slug = ? AND active = 1",
     [slug]
   );
-  return result?.results?.[0]?.id ?? null;
+  return (result?.results?.[0]?.id as number | undefined) ?? null;
 }
 
 async function sourceExistsLocal(source: string, sourceId: string): Promise<boolean> {

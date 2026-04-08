@@ -50,6 +50,7 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 PLAN.md
+SETUP.md
 
 # playwright
 test-results/
