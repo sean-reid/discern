@@ -24,9 +24,3 @@ bucket_name = "discern-images"
 # Workers AI binding (free tier, no API key needed)
 [ai]
 binding = "AI"
-
-# Environment variables (set real values with `wrangler secret put`)
-[vars]
-UNSPLASH_ACCESS_KEY = ""
-PEXELS_API_KEY = ""
-HF_TOKEN = ""
