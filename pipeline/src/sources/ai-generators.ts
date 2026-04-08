@@ -227,16 +227,16 @@ export async function generateWithHuggingFace(
   const prompt =
     categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
 
-  // Rotate between models for diversity
+  // Rotate between free inference models for diversity
   const models = [
-    "stabilityai/stable-diffusion-xl-base-1.0",
     "black-forest-labs/FLUX.1-schnell",
+    "stabilityai/stable-diffusion-3.5-large",
   ];
   const model = models[Math.floor(Math.random() * models.length)];
 
   try {
     const response = await fetch(
-      `https://router.huggingface.co/models/${model}`,
+      `https://router.huggingface.co/hf-inference/models/${model}`,
       {
         method: "POST",
         headers: {
