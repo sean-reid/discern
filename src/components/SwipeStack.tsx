@@ -36,9 +36,11 @@ export function SwipeStack() {
       const shownAt = currentImage.shownAt;
       const guessedAi = direction === "left";
 
-      // Advance queue immediately — next card becomes interactive
-      onImageConsumed(imageId);
-      setDragAbs(0);
+      // Advance queue after fly-out animation (150ms) so card stays mounted
+      setTimeout(() => {
+        onImageConsumed(imageId);
+        setDragAbs(0);
+      }, 150);
 
       // Fire API call async — don't block
       fetch("/api/swipe", {
