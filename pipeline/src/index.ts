@@ -2,10 +2,9 @@
 // Discern Pipeline Worker
 // Cloudflare Worker with scheduled (cron) triggers
 //
-// 03:00 UTC -- Image ingestion from Unsplash/Pexels + AI generation
-// 04:00 UTC -- Nightly Elo recalculation
-// 05:00 UTC -- Image retirement
-// 12:00, 20:00 UTC -- AI-only generation to maintain balance
+// 03:00, 15:00 UTC -- Image ingestion from Unsplash/Pexels + AI generation
+// 04:00 UTC -- Elo recalculation
+// 09:00, 21:00 UTC -- AI-only generation to maintain balance
 // ============================================================
 
 import { Hono } from "hono";
@@ -94,18 +93,14 @@ const worker = {
 
     switch (hour) {
       case 3:
+      case 15:
         ctx.waitUntil(runImageIngestion(env));
         break;
       case 4:
         ctx.waitUntil(runEloRecalculation(env));
         break;
-      case 5:
-        // Retirement disabled — per-user history prevents repeats,
-        // no need to shrink library until it exceeds 5000+ images
-        console.log("Image retirement is disabled — re-enable when library exceeds 5000 images");
-        break;
-      case 12:
-      case 20:
+      case 9:
+      case 21:
         ctx.waitUntil(runAiOnlyGeneration(env));
         break;
       default:
