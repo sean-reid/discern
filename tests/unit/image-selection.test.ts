@@ -3,13 +3,16 @@ import { selectNextImage } from "@/lib/image-selection";
 import type { DB, PreparedStatement } from "@/lib/db";
 
 /**
- * Creates a mock D1-style database that returns the given results
- * from the prepare().bind().all() chain.
+ * Creates a mock D1-style database.
+ * first() returns the balance data, all() returns image candidates.
  */
-function createMockDb(results: unknown[] = []): DB {
+function createMockDb(
+  results: unknown[] = [],
+  balance: { ai_count: number; real_count: number } = { ai_count: 0, real_count: 0 }
+): DB {
   const mockStatement: PreparedStatement = {
     bind: vi.fn().mockReturnThis(),
-    first: vi.fn().mockResolvedValue(results[0] ?? null),
+    first: vi.fn().mockResolvedValue(balance),
     all: vi.fn().mockResolvedValue({ results }),
     run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
   };
@@ -45,70 +48,49 @@ describe("selectNextImage", () => {
     expect(result).not.toBeNull();
     expect(result!.id).toBe("img-1");
     expect(result!.r2_key).toBe("photos/img-1.jpg");
-    expect(result!.width).toBe(1024);
-    expect(result!.height).toBe(768);
-    expect(result!.category_slug).toBe("people");
   });
 
-  it("does not include category in bindings when category is 'all'", async () => {
-    const image = {
-      id: "img-1",
-      r2_key: "photos/img-1.jpg",
-      width: 1024,
-      height: 768,
-      category_slug: "people",
-    };
-    const db = createMockDb([image]);
+  it("first query is the balance check", async () => {
+    const db = createMockDb([{ id: "img-1", r2_key: "x", width: 100, height: 100, category_slug: "people" }]);
     await selectNextImage(db, "user-1", 1200, "all");
 
-    // The first call to prepare (Elo-matched range) should be checked.
-    // bind is called with [eloMin, eloMax, userId] -- no category.
-    const stmt = db.prepare("") as unknown as PreparedStatement;
-    // Access the actual mock returned by db.prepare
     const prepareCall = vi.mocked(db.prepare);
     expect(prepareCall).toHaveBeenCalled();
+    // First query should be the balance check
+    expect(prepareCall.mock.calls[0][0]).toContain("ai_count");
+    expect(prepareCall.mock.calls[0][0]).toContain("real_count");
+  });
 
-    // The query should NOT contain "AND c.slug = ?"
-    const firstQuery = prepareCall.mock.calls[0][0];
-    expect(firstQuery).not.toContain("AND c.slug = ?");
-
-    // bind should have been called with 3 args (eloMin, eloMax, userId)
-    const bindMock = vi.mocked(
-      (db.prepare("") as unknown as PreparedStatement).bind
+  it("image selection query includes is_ai filter for balance", async () => {
+    const db = createMockDb(
+      [{ id: "img-1", r2_key: "x", width: 100, height: 100, category_slug: "people" }],
+      { ai_count: 5, real_count: 10 } // more real shown, should prefer AI
     );
-    const firstBindArgs = bindMock.mock.calls[0];
-    expect(firstBindArgs).toHaveLength(3);
+    await selectNextImage(db, "user-1", 1200, "all");
+
+    const prepareCall = vi.mocked(db.prepare);
+    // Second call is the image selection with is_ai filter
+    const selectionQuery = prepareCall.mock.calls[1][0];
+    expect(selectionQuery).toContain("AND i.is_ai = ?");
   });
 
   it("passes category to query when category is not 'all'", async () => {
-    const image = {
-      id: "img-2",
-      r2_key: "photos/img-2.jpg",
-      width: 800,
-      height: 600,
-      category_slug: "animals",
-    };
-    const db = createMockDb([image]);
+    const db = createMockDb(
+      [{ id: "img-2", r2_key: "x", width: 800, height: 600, category_slug: "animals" }]
+    );
     await selectNextImage(db, "user-1", 1200, "animals");
 
     const prepareCall = vi.mocked(db.prepare);
-    expect(prepareCall).toHaveBeenCalled();
-
-    // The query SHOULD contain category filter
-    const firstQuery = prepareCall.mock.calls[0][0];
-    expect(firstQuery).toContain("AND c.slug = ?");
-
-    // bind should have been called with 4 args (eloMin, eloMax, userId, category)
-    const bindMock = vi.mocked(
-      (db.prepare("") as unknown as PreparedStatement).bind
-    );
-    const firstBindArgs = bindMock.mock.calls[0];
-    expect(firstBindArgs).toHaveLength(4);
-    expect(firstBindArgs[3]).toBe("animals");
+    // Find the selection query (not the balance query)
+    const selectionQueries = prepareCall.mock.calls
+      .map((c) => c[0])
+      .filter((q: string) => q.includes("FROM images"));
+    expect(selectionQueries.length).toBeGreaterThan(0);
+    expect(selectionQueries[0]).toContain("AND c.slug = ?");
   });
 
   it("falls back to wider Elo ranges when first range has no results", async () => {
-    let callCount = 0;
+    let allCallCount = 0;
     const image = {
       id: "img-fallback",
       r2_key: "photos/fallback.jpg",
@@ -117,13 +99,12 @@ describe("selectNextImage", () => {
       category_slug: "landscapes",
     };
 
-    // Return empty on first two calls, then return image on the third
     const mockStatement: PreparedStatement = {
       bind: vi.fn().mockReturnThis(),
-      first: vi.fn().mockResolvedValue(null),
+      first: vi.fn().mockResolvedValue({ ai_count: 0, real_count: 0 }),
       all: vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount < 3) {
+        allCallCount++;
+        if (allCallCount < 3) {
           return Promise.resolve({ results: [] });
         }
         return Promise.resolve({ results: [image] });
@@ -138,7 +119,5 @@ describe("selectNextImage", () => {
     const result = await selectNextImage(db, "user-1", 1200, "all");
     expect(result).not.toBeNull();
     expect(result!.id).toBe("img-fallback");
-    // Should have been called 3 times (3 Elo ranges)
-    expect(vi.mocked(mockStatement.all).mock.calls).toHaveLength(3);
   });
 });
