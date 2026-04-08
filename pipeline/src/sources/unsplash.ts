@@ -3,6 +3,8 @@
 // Free tier: 50 requests/hour
 // ============================================================
 
+import { isCoolingDown, coolDown } from "./rate-limiter";
+
 export interface SourceImage {
   url: string;
   photographer: string;
@@ -43,10 +45,7 @@ export async function fetchUnsplashImages(
   query: string,
   count: number
 ): Promise<SourceImage[]> {
-  if (!apiKey) {
-    console.warn("Unsplash API key not configured, skipping");
-    return [];
-  }
+  if (!apiKey || isCoolingDown("unsplash")) return [];
 
   // Unsplash caps per-request count at 30
   const perRequest = Math.min(count, 30);
@@ -63,11 +62,13 @@ export async function fetchUnsplashImages(
     },
   });
 
+  if (response.status === 429 || response.status === 403) {
+    coolDown("unsplash", 3600_000); // 1 hour, they rate limit aggressively
+    return [];
+  }
+
   if (!response.ok) {
-    const text = await response.text();
-    console.error(
-      `Unsplash API error ${response.status}: ${text.slice(0, 200)}`
-    );
+    console.log(`Unsplash API error ${response.status}`);
     return [];
   }
 

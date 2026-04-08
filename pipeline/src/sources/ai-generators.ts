@@ -1,7 +1,7 @@
 // ============================================================
 // AI Image Generation Sources (all free)
 //
-// 1. Cloudflare Workers AI (Flux Schnell / Stable Diffusion XL)
+// 1. Cloudflare Workers AI (Flux Schnell)
 //    - Free tier included with Workers
 //    - Called via env.AI binding, no external API key
 //
@@ -11,8 +11,10 @@
 //
 // 3. Hugging Face Inference API
 //    - Free tier, needs HF_TOKEN
-//    - Stable Diffusion XL, Flux, etc.
+//    - FLUX.1-schnell, SD3 Medium
 // ============================================================
+
+import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
 
 interface GeneratedImage {
   data: ArrayBuffer;
@@ -20,7 +22,6 @@ interface GeneratedImage {
   prompt: string;
 }
 
-// Prompt templates per category. Each has several variants to prevent repetition.
 const PROMPTS: Record<string, string[]> = {
   people: [
     "professional headshot of a person in natural lighting, shallow depth of field",
@@ -87,20 +88,23 @@ const PROMPTS: Record<string, string[]> = {
   ],
 };
 
+function pickPrompt(category: string): string | null {
+  const prompts = PROMPTS[category];
+  if (!prompts) return null;
+  return prompts[Math.floor(Math.random() * prompts.length)];
+}
+
 /**
- * Generate an image using Pollinations.ai (free, no key needed).
- * Simply fetches an image from their URL-based API.
+ * Pollinations.ai - free, no key needed.
  */
 export async function generateWithPollinations(
   category: string
 ): Promise<GeneratedImage | null> {
-  const categoryPrompts = PROMPTS[category];
-  if (!categoryPrompts) return null;
+  if (isCoolingDown("pollinations")) return null;
 
-  const prompt =
-    categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+  const prompt = pickPrompt(category);
+  if (!prompt) return null;
 
-  // Pollinations generates on the fly from the URL
   const encodedPrompt = encodeURIComponent(prompt);
   const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=900&height=1200&nologo=true&seed=${Date.now()}`;
 
@@ -109,51 +113,41 @@ export async function generateWithPollinations(
       headers: { Accept: "image/jpeg" },
     });
 
+    if (response.status === 429) {
+      coolDown("pollinations");
+      return null;
+    }
+
     if (!response.ok) {
-      console.log(
-        `[AI-Gen] Pollinations returned ${response.status} for "${prompt}"`
-      );
+      console.log(`[AI-Gen] Pollinations ${response.status}`);
       return null;
     }
 
     const data = await response.arrayBuffer();
-
-    // Basic sanity check: should be at least 10KB for a real image
     if (data.byteLength < 10000) {
       console.log(`[AI-Gen] Pollinations response too small (${data.byteLength} bytes)`);
       return null;
     }
 
-    return {
-      data,
-      model: "pollinations-flux",
-      prompt,
-    };
+    return { data, model: "pollinations-flux", prompt };
   } catch (err) {
-    console.error(`[AI-Gen] Pollinations error: ${err}`);
+    console.log(`[AI-Gen] Pollinations failed: ${err}`);
+    coolDown("pollinations");
     return null;
   }
 }
 
 /**
- * Generate an image using Cloudflare Workers AI.
- * Uses the AI binding available in the Worker environment.
- * Falls back gracefully if the binding isn't configured.
+ * Cloudflare Workers AI - free tier, env.AI binding.
  */
-// Track if Workers AI is exhausted so we stop calling it
-let workersAiExhausted = false;
-
 export async function generateWithWorkersAI(
   ai: unknown,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!ai || workersAiExhausted) return null;
+  if (!ai || isCoolingDown("workers-ai")) return null;
 
-  const categoryPrompts = PROMPTS[category];
-  if (!categoryPrompts) return null;
-
-  const prompt =
-    categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+  const prompt = pickPrompt(category);
+  if (!prompt) return null;
 
   try {
     const aiBinding = ai as {
@@ -196,43 +190,31 @@ export async function generateWithWorkersAI(
       data = result as ArrayBuffer;
     }
 
-    if (data.byteLength < 5000) {
-      console.log(`[AI-Gen] Workers AI response too small (${data.byteLength} bytes)`);
-      return null;
-    }
+    if (data.byteLength < 5000) return null;
 
-    return {
-      data,
-      model: "flux-1-schnell",
-      prompt,
-    };
+    return { data, model: "flux-1-schnell", prompt };
   } catch (err) {
     const msg = String(err);
     if (msg.includes("4006") || msg.includes("daily free allocation")) {
-      console.log("[AI-Gen] Workers AI daily limit reached, skipping for this session");
-      workersAiExhausted = true;
+      markExhausted("workers-ai");
     } else {
-      console.log(`[AI-Gen] Workers AI failed: ${msg}`);
+      coolDown("workers-ai");
     }
     return null;
   }
 }
 
 /**
- * Generate an image using Hugging Face Inference API (free tier).
- * Uses Stable Diffusion XL or Flux models.
+ * Hugging Face Inference API - free tier.
  */
 export async function generateWithHuggingFace(
   hfToken: string | undefined,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!hfToken) return null;
+  if (!hfToken || isCoolingDown("huggingface")) return null;
 
-  const categoryPrompts = PROMPTS[category];
-  if (!categoryPrompts) return null;
-
-  const prompt =
-    categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+  const prompt = pickPrompt(category);
+  if (!prompt) return null;
 
   const models = [
     "black-forest-labs/FLUX.1-schnell",
@@ -260,22 +242,29 @@ export async function generateWithHuggingFace(
       }
     );
 
+    if (response.status === 429) {
+      coolDown("huggingface");
+      return null;
+    }
+
+    if (response.status === 503) {
+      // Model loading, cool down briefly
+      coolDown("huggingface", 30_000);
+      return null;
+    }
+
     if (!response.ok) {
       const text = await response.text();
-      console.log(
-        `[AI-Gen] HuggingFace ${response.status} for ${model}: ${text.slice(0, 200)}`
-      );
+      console.log(`[AI-Gen] HuggingFace ${response.status} for ${model}: ${text.slice(0, 100)}`);
+      if (response.status === 410) {
+        // Model deprecated, don't cool down the whole source
+        console.log(`[AI-Gen] Model ${model} deprecated, will try another next time`);
+      }
       return null;
     }
 
     const data = await response.arrayBuffer();
-
-    if (data.byteLength < 5000) {
-      console.log(
-        `[AI-Gen] HuggingFace response too small (${data.byteLength} bytes)`
-      );
-      return null;
-    }
+    if (data.byteLength < 5000) return null;
 
     return {
       data,
@@ -283,14 +272,12 @@ export async function generateWithHuggingFace(
       prompt,
     };
   } catch (err) {
-    console.error(`[AI-Gen] HuggingFace error: ${err}`);
+    console.log(`[AI-Gen] HuggingFace failed: ${err}`);
+    coolDown("huggingface");
     return null;
   }
 }
 
-/**
- * Get a random category slug.
- */
 export function randomCategory(): string {
   const cats = Object.keys(PROMPTS);
   return cats[Math.floor(Math.random() * cats.length)];

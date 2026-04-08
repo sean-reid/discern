@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { SourceImage } from "./unsplash";
+import { isCoolingDown, coolDown } from "./rate-limiter";
 
 interface PexelsPhoto {
   id: number;
@@ -33,10 +34,7 @@ export async function fetchPexelsImages(
   query: string,
   count: number
 ): Promise<SourceImage[]> {
-  if (!apiKey) {
-    console.warn("Pexels API key not configured, skipping");
-    return [];
-  }
+  if (!apiKey || isCoolingDown("pexels")) return [];
 
   const perPage = Math.min(count, 80);
   // Pick a random page offset to get variety across runs
@@ -55,11 +53,13 @@ export async function fetchPexelsImages(
     },
   });
 
+  if (response.status === 429) {
+    coolDown("pexels", 3600_000);
+    return [];
+  }
+
   if (!response.ok) {
-    const text = await response.text();
-    console.error(
-      `Pexels API error ${response.status}: ${text.slice(0, 200)}`
-    );
+    console.log(`Pexels API error ${response.status}`);
     return [];
   }
 
