@@ -23,10 +23,10 @@ const state: DailyCounters = {
 
 // Hard daily caps per source. These are conservative -
 // well below the actual free tier limits.
+// AI generators don't need caps — their external limits (neurons, credits,
+// rate limits) are handled by error detection in each generator.
+// Only real image sources need guards to prevent API key revocation.
 const DAILY_CAPS: Record<string, number> = {
-  "workers-ai": 80,        // ~10K neurons/day, ~91 neurons/image at 768x1024 @8 steps = ~109 max
-  "huggingface": 100,      // unclear limit, stay conservative
-  "pollinations": 100,     // no published limit, be respectful
   "unsplash": 40,          // 50/hr but we only run a few times/day
   "pexels": 6,             // 200/month total, ~6/day to stay within budget
   "pixabay": 80,           // 100/min limit, cap conservatively per day
