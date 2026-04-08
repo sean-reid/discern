@@ -1,10 +1,11 @@
 /**
  * Platform bindings for Cloudflare D1 and R2.
  *
- * Production: bindings come from the Worker environment via OpenNext.
- * Local dev: bindings come from wrangler's getPlatformProxy().
+ * Local dev: wrangler's getPlatformProxy() provides D1/R2 bindings.
+ * Production: will use OpenNext's Cloudflare context (added when deploying).
  *
- * Initializes once, caches the result.
+ * wrangler is in serverExternalPackages (next.config.ts) so Next.js
+ * won't try to bundle it.
  */
 
 import type { DB } from "./db";
@@ -24,42 +25,12 @@ interface PlatformEnv {
 }
 
 let _env: PlatformEnv | null = null;
-let _initPromise: Promise<PlatformEnv> | null = null;
 
-async function init(): Promise<PlatformEnv> {
-  // Try Cloudflare Workers (production via OpenNext)
-  try {
-    const mod = await (new Function(
-      'return import("@opennextjs/cloudflare")'
-    )() as Promise<{ getCloudflareContext: () => Promise<{ env: unknown }> }>);
-    const ctx = await mod.getCloudflareContext();
-    return ctx.env as unknown as PlatformEnv;
-  } catch {
-    // Not in Workers
-  }
-
-  // Local dev: dynamic require to avoid Turbopack bundling wrangler/workerd
-  try {
-    const { getPlatformProxy } = await (new Function(
-      'return import("wrangler")'
-    )() as Promise<typeof import("wrangler")>);
-    const proxy = await getPlatformProxy({ configPath: "wrangler.jsonc" });
-    return proxy.env as unknown as PlatformEnv;
-  } catch (err) {
-    throw new Error(`Failed to initialize platform bindings: ${err}`);
-  }
-}
-
-/**
- * Get platform environment (D1, R2 bindings). Cached after first call.
- */
 export async function getPlatformEnv(): Promise<PlatformEnv> {
   if (_env) return _env;
-  if (!_initPromise) {
-    _initPromise = init().then((env) => {
-      _env = env;
-      return env;
-    });
-  }
-  return _initPromise;
+
+  const { getPlatformProxy } = await import("wrangler");
+  const proxy = await getPlatformProxy({ configPath: "wrangler.jsonc" });
+  _env = proxy.env as unknown as PlatformEnv;
+  return _env;
 }
