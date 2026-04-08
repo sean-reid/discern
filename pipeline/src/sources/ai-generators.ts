@@ -111,6 +111,7 @@ export async function generateWithPollinations(
   try {
     const response = await fetch(url, {
       headers: { Accept: "image/jpeg" },
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (response.status === 429) {
@@ -239,6 +240,7 @@ export async function generateWithHuggingFace(
             height: 1024,
           },
         }),
+        signal: AbortSignal.timeout(30_000),
       }
     );
 
