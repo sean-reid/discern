@@ -59,7 +59,7 @@ const CATEGORY_QUERIES: Record<string, string[]> = {
 const CATEGORY_SLUGS = Object.keys(CATEGORY_QUERIES);
 const IMAGES_PER_SOURCE = 2;
 const AI_TARGET = 20;
-const AI_MAX_ATTEMPTS = 50;
+const AI_BATCH_SIZE = 5; // attempts per invocation to stay under time limit
 
 // ---- Hono app ----
 
@@ -97,9 +97,27 @@ app.get("/trigger/real", async (c) => {
   return c.json({ type: "real", status: "started", batch });
 });
 
-app.get("/trigger/ai", (c) => {
-  c.executionCtx.waitUntil(runAiGeneration(c.env));
-  return c.json({ type: "ai", status: "started" });
+app.get("/trigger/ai", async (c) => {
+  const approved = parseInt(c.req.query("approved") || "0", 10);
+  const attempt = parseInt(c.req.query("attempt") || "0", 10);
+  const batchId = c.req.query("batch_id") || uuidv4();
+
+  const result = await runAiBatch(c.env, AI_BATCH_SIZE, attempt);
+
+  const totalApproved = approved + result.approved;
+  const nextAttempt = attempt + AI_BATCH_SIZE;
+
+  if (totalApproved < AI_TARGET && nextAttempt < AI_TARGET * 3) {
+    console.log(`[AI-Gen] Batch done: ${result.approved} approved this batch, ${totalApproved} total. Chaining...`);
+    c.executionCtx.waitUntil(
+      fetch(`${WORKER_URL}/trigger/ai?approved=${totalApproved}&attempt=${nextAttempt}&batch_id=${batchId}`)
+    );
+  } else {
+    console.log(`[AI-Gen] Complete: ${totalApproved} approved in ${nextAttempt} attempts`);
+    await logIngestionBatch(c.env.DB, batchId, "ai", nextAttempt, totalApproved, result.rejected, 0, null);
+  }
+
+  return c.json({ type: "ai", status: "started", approved: totalApproved });
 });
 
 app.get("/trigger/elo", (c) => {
@@ -129,7 +147,7 @@ const worker = {
         break;
       case 9:
       case 21:
-        ctx.waitUntil(runAiGeneration(env));
+        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/ai`));
         break;
       default:
         console.log(`No task configured for hour ${hour} UTC`);
@@ -252,19 +270,20 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
 // AI Image Generation
 // ============================================================
 
-async function runAiGeneration(env: Env): Promise<void> {
-  console.log(`[AI-Gen] Starting (target: ${AI_TARGET}, max attempts: ${AI_MAX_ATTEMPTS})`);
+const GENERATOR_NAMES = ["workers-ai", "huggingface", "pollinations"];
+
+async function runAiBatch(
+  env: Env,
+  maxAttempts: number,
+  startAttempt: number
+): Promise<{ approved: number; rejected: number }> {
+  console.log(`[AI-Gen] Batch starting at attempt ${startAttempt}, max ${maxAttempts}`);
 
   let approved = 0;
-  let attempts = 0;
   let rejected = 0;
-  const errors: string[] = [];
-  const batchId = uuidv4();
-  const generatorNames = ["workers-ai", "huggingface", "pollinations"];
 
-  while (approved < AI_TARGET && attempts < AI_MAX_ATTEMPTS) {
-    const i = attempts;
-    attempts++;
+  for (let i = 0; i < maxAttempts; i++) {
+    const attemptNum = startAttempt + i;
     const category = randomCategory();
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
@@ -274,15 +293,15 @@ async function runAiGeneration(env: Env): Promise<void> {
       () => generateWithHuggingFace(env.HF_TOKEN, category),
       () => generateWithPollinations(category),
     ];
-    const start = i % generators.length;
+    const start = attemptNum % generators.length;
 
     let generated = null;
     for (let g = 0; g < generators.length; g++) {
       const idx = (start + g) % generators.length;
-      console.log(`[AI-Gen] Attempt ${attempts}: trying ${generatorNames[idx]} for ${category}`);
+      console.log(`[AI-Gen] Attempt ${attemptNum + 1}: trying ${GENERATOR_NAMES[idx]} for ${category}`);
       generated = await generators[idx]();
       if (generated) {
-        console.log(`[AI-Gen] ${generatorNames[idx]}: ${Math.round(generated.data.byteLength / 1024)}KB`);
+        console.log(`[AI-Gen] ${GENERATOR_NAMES[idx]}: ${Math.round(generated.data.byteLength / 1024)}KB`);
         break;
       }
     }
@@ -319,20 +338,14 @@ async function runAiGeneration(env: Env): Promise<void> {
       });
 
       approved++;
-      console.log(`[AI-Gen] Saved ${imageId} (${generated.model}, ${category}) [${approved}/${AI_TARGET}]`);
+      console.log(`[AI-Gen] Saved ${imageId} (${generated.model}, ${category})`);
     } catch (err) {
-      errors.push(`${err}`);
+      console.error(`[AI-Gen] Error: ${err}`);
       rejected++;
     }
   }
 
-  await logIngestionBatch(
-    env.DB, batchId, "ai",
-    attempts, approved, rejected, 0,
-    errors.length > 0 ? errors.join("\n") : null
-  );
-
-  console.log(`[AI-Gen] Complete: approved=${approved} rejected=${rejected} attempts=${attempts}`);
+  return { approved, rejected };
 }
 
 // ============================================================
