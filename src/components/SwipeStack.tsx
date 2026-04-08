@@ -21,6 +21,8 @@ export function SwipeStack() {
   // Monotonic counter — ensures stale API responses don't regress stats
   const swipeCounter = useRef(0);
   const lastAppliedCounter = useRef(0);
+  // Prevents double-swipe on the same image (key repeat, rapid taps)
+  const lastSwipedId = useRef<string | null>(null);
 
   const { currentImage, nextImage, onImageConsumed, isLoading } =
     usePreloader();
@@ -29,6 +31,8 @@ export function SwipeStack() {
   const submitSwipe = useCallback(
     (direction: "left" | "right") => {
       if (!currentImage || !deviceId) return;
+      if (currentImage.id === lastSwipedId.current) return;
+      lastSwipedId.current = currentImage.id;
 
       const thisSwipe = ++swipeCounter.current;
       const imageId = currentImage.id;
