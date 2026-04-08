@@ -145,8 +145,8 @@ export function SwipeStack() {
           )}
         </AnimatePresence>
 
-        {/* Overlay labels */}
-        {!showResult && <SwipeOverlay progress={dragProgress} />}
+        {/* Overlay labels - only during active drag, not during exit animation */}
+        {!showResult && !isSwiping && <SwipeOverlay progress={dragProgress} />}
 
         {/* Result flash */}
         <AnimatePresence>

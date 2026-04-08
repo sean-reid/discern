@@ -227,7 +227,11 @@ export async function generateWithHuggingFace(
   const prompt =
     categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
 
-  const model = "black-forest-labs/FLUX.1-schnell";
+  const models = [
+    "black-forest-labs/FLUX.1-schnell",
+    "stabilityai/stable-diffusion-3-medium-diffusers",
+  ];
+  const model = models[Math.floor(Math.random() * models.length)];
 
   try {
     const response = await fetch(
