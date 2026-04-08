@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "discern",
+  "compatibility_date": "2024-12-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // D1 Database
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "discern-db",
+      "database_id": "a25c2162-ff33-4f2d-b429-e4418f6a4339"
+    }
+  ],
+
+  // R2 Bucket
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "discern-images"
+    }
+  ],
+
+  // Environment variables
+  "vars": {
+    "IMAGE_BASE_URL": "https://pub-4808f83d84b74196a8a2f5ab681d8e51.r2.dev"
+  }
+}
