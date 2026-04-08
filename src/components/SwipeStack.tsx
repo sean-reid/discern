@@ -154,8 +154,8 @@ export function SwipeStack() {
         </AnimatePresence>
       </div>
 
-      {/* Desktop-only buttons (hidden on touch devices) */}
-      <div className="hidden md:flex gap-3 justify-center px-5 pb-5 pt-2">
+      {/* Buttons: subtle on touch, more visible on non-touch */}
+      <div className="flex gap-3 justify-center px-5 pb-4 pt-1 opacity-30 hover:opacity-100 transition-opacity md:opacity-100">
         <button
           onClick={() => handleSwipe("left")}
           disabled={isSwiping || !!showResult}
