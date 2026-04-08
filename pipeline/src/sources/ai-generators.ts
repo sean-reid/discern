@@ -102,7 +102,7 @@ export async function generateWithPollinations(
 
   // Pollinations generates on the fly from the URL
   const encodedPrompt = encodeURIComponent(prompt);
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1200&height=900&nologo=true&seed=${Date.now()}`;
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=900&height=1200&nologo=true&seed=${Date.now()}`;
 
   try {
     const response = await fetch(url, {
@@ -168,8 +168,8 @@ export async function generateWithWorkersAI(
       {
         prompt: `${prompt}, photorealistic, high resolution, sharp detail`,
         num_steps: 8,
-        width: 1024,
-        height: 768,
+        width: 768,
+        height: 1024,
       }
     );
 
@@ -245,11 +245,11 @@ export async function generateWithHuggingFace(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `${prompt}, photorealistic, sharp detail, high resolution`,
+          inputs: `${prompt}, photorealistic, sharp detail, high resolution, portrait orientation`,
           parameters: {
             num_inference_steps: 8,
-            width: 1024,
-            height: 768,
+            width: 768,
+            height: 1024,
           },
         }),
       }
