@@ -140,11 +140,14 @@ export async function generateWithPollinations(
  * Uses the AI binding available in the Worker environment.
  * Falls back gracefully if the binding isn't configured.
  */
+// Track if Workers AI is exhausted so we stop calling it
+let workersAiExhausted = false;
+
 export async function generateWithWorkersAI(
   ai: unknown,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!ai) return null;
+  if (!ai || workersAiExhausted) return null;
 
   const categoryPrompts = PROMPTS[category];
   if (!categoryPrompts) return null;
@@ -153,9 +156,6 @@ export async function generateWithWorkersAI(
     categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
 
   try {
-    // The AI binding exposes a run() method
-    // @cf/black-forest-labs/flux-1-schnell is fast and free
-    // @cf/stabilityai/stable-diffusion-xl-base-1.0 is also available
     const aiBinding = ai as {
       run(
         model: string,
@@ -173,7 +173,6 @@ export async function generateWithWorkersAI(
       }
     );
 
-    // Result is typically a ReadableStream or Uint8Array of the PNG
     let data: ArrayBuffer;
     if (result instanceof ReadableStream) {
       const reader = result.getReader();
@@ -208,7 +207,13 @@ export async function generateWithWorkersAI(
       prompt,
     };
   } catch (err) {
-    console.error(`[AI-Gen] Workers AI error: ${err}`);
+    const msg = String(err);
+    if (msg.includes("4006") || msg.includes("daily free allocation")) {
+      console.log("[AI-Gen] Workers AI daily limit reached, skipping for this session");
+      workersAiExhausted = true;
+    } else {
+      console.log(`[AI-Gen] Workers AI failed: ${msg}`);
+    }
     return null;
   }
 }
