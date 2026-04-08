@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
+import { useGameStore } from "@/stores/game-store";
 import type { UserStats } from "@/lib/types";
 
 interface StatsBarProps {
@@ -8,6 +9,7 @@ interface StatsBarProps {
 }
 
 export function StatsBar({ stats }: StatsBarProps) {
+  const updateStats = useGameStore((s) => s.updateStats);
   const accuracyPct = Math.round(stats.accuracy * 100);
 
   return (
@@ -20,6 +22,7 @@ export function StatsBar({ stats }: StatsBarProps) {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
+              onAnimationComplete={() => updateStats({ eloDelta: null })}
               className={`text-[10px] font-medium ml-1 ${
                 stats.eloDelta > 0 ? "text-green" : "text-red"
               }`}
