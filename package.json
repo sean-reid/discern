@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n app,pipeline -c blue,magenta \"next dev\" \"cd pipeline && npx wrangler dev --config wrangler.toml\"",
+    "dev": "concurrently -n app,pipeline -c blue,magenta \"next dev\" \"cd pipeline && npx wrangler dev --config wrangler.toml --persist-to ../.wrangler/state\"",
     "dev:app": "next dev",
-    "dev:pipeline": "cd pipeline && npx wrangler dev --config wrangler.toml",
+    "dev:pipeline": "cd pipeline && npx wrangler dev --config wrangler.toml --persist-to ../.wrangler/state",
     "dev:setup": "for f in migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f; done && cd pipeline && for f in ../migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f --config wrangler.toml; done",
     "dev:seed": "curl -s http://localhost:8788/trigger/ingest",
     "build": "next build",
