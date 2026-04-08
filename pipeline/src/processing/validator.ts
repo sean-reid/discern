@@ -13,9 +13,10 @@ export interface ValidationResult {
   fileSize: number;
 }
 
-// Min dimensions for acceptable images
-const MIN_WIDTH = 800;
-const MIN_HEIGHT = 600;
+// Min dimensions: the longer side must be at least 800,
+// the shorter side at least 600. Works for both landscape and portrait.
+const MIN_LONG = 800;
+const MIN_SHORT = 600;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 const MIN_FILE_SIZE = 10 * 1024; // 10 KB -- anything smaller is suspicious
 
@@ -219,10 +220,13 @@ export function validateImage(data: ArrayBuffer): ValidationResult {
 
   const { width, height } = dimensions;
 
-  if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+  const longSide = Math.max(width, height);
+  const shortSide = Math.min(width, height);
+
+  if (longSide < MIN_LONG || shortSide < MIN_SHORT) {
     return {
       valid: false,
-      reason: `Image too small (${width}x${height}, minimum ${MIN_WIDTH}x${MIN_HEIGHT})`,
+      reason: `Image too small (${width}x${height}, need ${MIN_SHORT} on short side, ${MIN_LONG} on long side)`,
       format,
       width,
       height,
