@@ -1,4 +1,4 @@
-INSERT INTO categories (slug, name, icon) VALUES
+INSERT OR IGNORE INTO categories (slug, name, icon) VALUES
   ('people',       'People',        '👤'),
   ('landscapes',   'Landscapes',    '🏔️'),
   ('animals',      'Animals',       '🐾'),

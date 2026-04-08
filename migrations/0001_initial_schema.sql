@@ -43,12 +43,12 @@ CREATE TABLE IF NOT EXISTS images (
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_images_status_category ON images(status, category_id);
-CREATE INDEX idx_images_elo ON images(elo_rating) WHERE status = 'approved';
-CREATE INDEX idx_images_is_ai ON images(is_ai) WHERE status = 'approved';
-CREATE INDEX idx_images_source ON images(source, source_id);
-CREATE INDEX idx_images_phash ON images(phash) WHERE phash IS NOT NULL;
-CREATE INDEX idx_images_times_shown ON images(times_shown) WHERE status = 'approved';
+CREATE INDEX IF NOT EXISTS idx_images_status_category ON images(status, category_id);
+CREATE INDEX IF NOT EXISTS idx_images_elo ON images(elo_rating) WHERE status = 'approved';
+CREATE INDEX IF NOT EXISTS idx_images_is_ai ON images(is_ai) WHERE status = 'approved';
+CREATE INDEX IF NOT EXISTS idx_images_source ON images(source, source_id);
+CREATE INDEX IF NOT EXISTS idx_images_phash ON images(phash) WHERE phash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_images_times_shown ON images(times_shown) WHERE status = 'approved';
 
 -- ----- USERS -----
 CREATE TABLE IF NOT EXISTS users (
@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_active_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_users_device_id ON users(device_id);
-CREATE INDEX idx_users_elo ON users(elo_rating);
+CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id);
+CREATE INDEX IF NOT EXISTS idx_users_elo ON users(elo_rating);
 
 -- ----- ANSWERS (swipe log) -----
 CREATE TABLE IF NOT EXISTS answers (
@@ -85,9 +85,9 @@ CREATE TABLE IF NOT EXISTS answers (
   created_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_answers_user_id ON answers(user_id);
-CREATE INDEX idx_answers_image_id ON answers(image_id);
-CREATE INDEX idx_answers_user_image ON answers(user_id, image_id);
+CREATE INDEX IF NOT EXISTS idx_answers_user_id ON answers(user_id);
+CREATE INDEX IF NOT EXISTS idx_answers_image_id ON answers(image_id);
+CREATE INDEX IF NOT EXISTS idx_answers_user_image ON answers(user_id, image_id);
 
 -- ----- USER_IMAGE_HISTORY (prevent re-showing) -----
 CREATE TABLE IF NOT EXISTS user_image_history (
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS user_image_history (
   PRIMARY KEY (user_id, image_id)
 );
 
-CREATE INDEX idx_uih_user ON user_image_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_uih_user ON user_image_history(user_id);
 
 -- ----- DAILY_STATS (analytics, future leaderboard) -----
 CREATE TABLE IF NOT EXISTS daily_stats (
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS daily_stats (
   UNIQUE(user_id, date)
 );
 
-CREATE INDEX idx_daily_stats_date ON daily_stats(date);
+CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date);
 
 -- ----- IMAGE_INGESTION_LOG -----
 CREATE TABLE IF NOT EXISTS image_ingestion_log (
