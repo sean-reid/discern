@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   _request: Request,
-  ctx: RouteContext<"/api/image-proxy/[...path]">
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const { path } = await ctx.params;
+  const { path } = await params;
   const r2Key = Array.isArray(path) ? path.join("/") : path;
 
   const env = await getPlatformEnv();
