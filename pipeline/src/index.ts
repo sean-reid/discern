@@ -24,11 +24,7 @@ import { analyzeExif } from "./processing/exif-analyzer";
 import {
   insertImage,
   updateImageElo,
-  retireImage,
   getImagesForEloRecalc,
-  getImagesForRetirementCheck,
-  getActiveUsersInEloBracket,
-  getUniqueViewersForImage,
   sourceImageExists,
   getCategoryId,
   logIngestionBatch,
@@ -67,11 +63,6 @@ app.get("/trigger/ingest", (c) => {
 app.get("/trigger/elo", (c) => {
   c.executionCtx.waitUntil(runEloRecalculation(c.env));
   return c.json({ started: "elo-recalculation" });
-});
-
-app.get("/trigger/retire", (c) => {
-  c.executionCtx.waitUntil(runImageRetirement(c.env));
-  return c.json({ started: "image-retirement" });
 });
 
 app.get("/trigger/ai", (c) => {
@@ -567,57 +558,3 @@ async function runEloRecalculation(env: Env): Promise<void> {
   console.log(`[Elo] Recalculation complete: updated ${updated}/${images.length} images`);
 }
 
-// ============================================================
-// 05:00 UTC -- Image Retirement
-// ============================================================
-
-// Elo bracket size for retirement checks
-const ELO_BRACKET_SIZE = 200;
-
-// Retire if shown to more than this fraction of active users in the bracket
-const RETIREMENT_THRESHOLD = 0.8;
-
-async function runImageRetirement(env: Env): Promise<void> {
-  console.log("[Retirement] Starting nightly check");
-
-  const images = await getImagesForRetirementCheck(env.DB);
-  console.log(`[Retirement] Checking ${images.length} active images`);
-
-  let retired = 0;
-
-  for (const img of images) {
-    // Determine this image's Elo bracket
-    const bracketMin =
-      Math.floor(img.elo_rating / ELO_BRACKET_SIZE) * ELO_BRACKET_SIZE;
-    const bracketMax = bracketMin + ELO_BRACKET_SIZE;
-
-    // How many active users are in this bracket?
-    const usersInBracket = await getActiveUsersInEloBracket(
-      env.DB,
-      bracketMin,
-      bracketMax
-    );
-
-    // If there are very few users, don't retire (not enough data)
-    if (usersInBracket < 5) continue;
-
-    // How many unique users have seen this image?
-    const uniqueViewers = await getUniqueViewersForImage(env.DB, img.id);
-
-    const viewRate = uniqueViewers / usersInBracket;
-
-    if (viewRate > RETIREMENT_THRESHOLD) {
-      await retireImage(
-        env.DB,
-        img.id,
-        `Shown to ${Math.round(viewRate * 100)}% of active users in Elo bracket ${bracketMin}-${bracketMax}`
-      );
-      retired++;
-      console.log(
-        `[Retirement] Retired image ${img.id} (${Math.round(viewRate * 100)}% exposure in bracket ${bracketMin}-${bracketMax})`
-      );
-    }
-  }
-
-  console.log(`[Retirement] Complete: retired ${retired} images`);
-}

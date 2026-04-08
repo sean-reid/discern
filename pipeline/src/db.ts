@@ -29,13 +29,6 @@ export interface ImageForEloRecalc {
   is_ai: number;
 }
 
-export interface ImageForRetirement {
-  id: string;
-  times_shown: number;
-  elo_rating: number;
-  category_id: number;
-}
-
 /**
  * Insert a new image record into D1.
  */
@@ -88,24 +81,6 @@ export async function updateImageElo(
 }
 
 /**
- * Retire an image (remove from active rotation).
- */
-export async function retireImage(
-  db: D1Database,
-  imageId: string,
-  reason: string
-): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE images
-       SET status = 'retired', retired_reason = ?, updated_at = datetime('now')
-       WHERE id = ?`
-    )
-    .bind(reason, imageId)
-    .run();
-}
-
-/**
  * Get images with enough answers for Elo recalculation.
  * Only considers approved images with 20+ total responses.
  */
@@ -125,76 +100,6 @@ export async function getImagesForEloRecalc(
     .all<ImageForEloRecalc>();
 
   return result.results;
-}
-
-/**
- * Get the count of active users (active in the last 30 days).
- */
-export async function getActiveUserCount(db: D1Database): Promise<number> {
-  const result = await db
-    .prepare(
-      `SELECT COUNT(*) as count FROM users
-       WHERE last_active_at >= datetime('now', '-30 days')`
-    )
-    .first<{ count: number }>();
-
-  return result?.count ?? 0;
-}
-
-/**
- * Get images that may be ready for retirement.
- * Returns approved images with their show counts.
- */
-export async function getImagesForRetirementCheck(
-  db: D1Database
-): Promise<ImageForRetirement[]> {
-  const result = await db
-    .prepare(
-      `SELECT id, times_shown, elo_rating, category_id
-       FROM images
-       WHERE status = 'approved'
-       ORDER BY times_shown DESC`
-    )
-    .all<ImageForRetirement>();
-
-  return result.results;
-}
-
-/**
- * Get count of users in a given Elo bracket who have been active recently.
- */
-export async function getActiveUsersInEloBracket(
-  db: D1Database,
-  eloMin: number,
-  eloMax: number
-): Promise<number> {
-  const result = await db
-    .prepare(
-      `SELECT COUNT(*) as count FROM users
-       WHERE elo_rating BETWEEN ? AND ?
-         AND last_active_at >= datetime('now', '-30 days')`
-    )
-    .bind(eloMin, eloMax)
-    .first<{ count: number }>();
-
-  return result?.count ?? 0;
-}
-
-/**
- * Get the number of unique users who have seen a specific image.
- */
-export async function getUniqueViewersForImage(
-  db: D1Database,
-  imageId: string
-): Promise<number> {
-  const result = await db
-    .prepare(
-      `SELECT COUNT(*) as count FROM user_image_history WHERE image_id = ?`
-    )
-    .bind(imageId)
-    .first<{ count: number }>();
-
-  return result?.count ?? 0;
 }
 
 /**
