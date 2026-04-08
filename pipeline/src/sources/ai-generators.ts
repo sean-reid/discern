@@ -227,12 +227,7 @@ export async function generateWithHuggingFace(
   const prompt =
     categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
 
-  // Rotate between free inference models for diversity
-  const models = [
-    "black-forest-labs/FLUX.1-schnell",
-    "black-forest-labs/FLUX.1-dev",
-  ];
-  const model = models[Math.floor(Math.random() * models.length)];
+  const model = "black-forest-labs/FLUX.1-schnell";
 
   try {
     const response = await fetch(
