@@ -4,10 +4,10 @@ import {
   motion,
   useMotionValue,
   useTransform,
+  useAnimate,
   type PanInfo,
 } from "motion/react";
 import { SWIPE_THRESHOLD_PX, SWIPE_VELOCITY_THRESHOLD } from "@/lib/constants";
-import { useRef } from "react";
 
 interface SwipeCardProps {
   imageUrl: string;
@@ -24,12 +24,18 @@ export function SwipeCard({
 }: SwipeCardProps) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 0, 300], [-15, 0, 15]);
-  const swipeDirection = useRef<"left" | "right" | null>(null);
+  const [scope, animate] = useAnimate();
 
   x.on("change", (latest) => {
     const progress = latest / SWIPE_THRESHOLD_PX;
     onDragProgress(Math.max(-1, Math.min(1, progress)));
   });
+
+  async function flyOut(direction: "left" | "right") {
+    const target = direction === "left" ? -600 : 600;
+    await animate(scope.current, { x: target, opacity: 0 }, { duration: 0.3 });
+    onSwipe(direction);
+  }
 
   function handleDragEnd(_: unknown, info: PanInfo) {
     const { offset, velocity } = info;
@@ -38,8 +44,7 @@ export function SwipeCard({
       offset.x > SWIPE_THRESHOLD_PX ||
       velocity.x > SWIPE_VELOCITY_THRESHOLD
     ) {
-      swipeDirection.current = "right";
-      onSwipe("right");
+      flyOut("right");
       return;
     }
 
@@ -47,12 +52,12 @@ export function SwipeCard({
       offset.x < -SWIPE_THRESHOLD_PX ||
       velocity.x < -SWIPE_VELOCITY_THRESHOLD
     ) {
-      swipeDirection.current = "left";
-      onSwipe("left");
+      flyOut("left");
       return;
     }
 
-    // Below threshold: snap back, reset overlay
+    // Below threshold: snap back
+    animate(scope.current, { x: 0 }, { type: "spring", stiffness: 300, damping: 30 });
     onDragProgress(0);
   }
 
@@ -75,17 +80,13 @@ export function SwipeCard({
 
   return (
     <motion.div
+      ref={scope}
       className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none rounded-2xl overflow-hidden shadow-2xl"
       style={{ x, rotate }}
       drag="x"
-      dragSnapToOrigin
       dragElastic={0.8}
+      dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
-      exit={{
-        x: swipeDirection.current === "left" ? -500 : 500,
-        opacity: 0,
-        transition: { duration: 0.3 },
-      }}
     >
       <img
         src={imageUrl}

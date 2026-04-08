@@ -134,17 +134,15 @@ export function SwipeStack() {
         )}
 
         {/* Current card (interactive) */}
-        <AnimatePresence mode="wait">
-          {!showResult && (
-            <SwipeCard
-              key={currentImage.id}
-              imageUrl={currentImage.url}
-              isTop={true}
-              onSwipe={handleSwipe}
-              onDragProgress={setDragProgress}
-            />
-          )}
-        </AnimatePresence>
+        {!showResult && (
+          <SwipeCard
+            key={currentImage.id}
+            imageUrl={currentImage.url}
+            isTop={true}
+            onSwipe={handleSwipe}
+            onDragProgress={setDragProgress}
+          />
+        )}
 
         {/* Overlay labels - only during active drag, not during exit animation */}
         {!showResult && !isSwiping && <SwipeOverlay progress={dragProgress} />}
