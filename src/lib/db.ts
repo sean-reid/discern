@@ -26,6 +26,6 @@ export function setDb(db: DB) {
 export async function getDb(): Promise<DB> {
   if (_testDb) return _testDb;
   const { getPlatformEnv } = await import("./platform");
-  const env = await getPlatformEnv();
+  const env = getPlatformEnv();
   return env.DB;
 }

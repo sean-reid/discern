@@ -1,13 +1,11 @@
 /**
  * Platform bindings for Cloudflare D1 and R2.
  *
- * Local dev: wrangler's getPlatformProxy() provides D1/R2 bindings.
- * Production: will use OpenNext's Cloudflare context (added when deploying).
- *
- * wrangler is in serverExternalPackages (next.config.ts) so Next.js
- * won't try to bundle it.
+ * Uses OpenNext's getCloudflareContext() which works in both local dev
+ * (via initOpenNextCloudflareForDev in next.config.ts) and production.
  */
 
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { DB } from "./db";
 
 interface R2Object {
@@ -24,13 +22,7 @@ interface PlatformEnv {
   R2: R2Bucket;
 }
 
-let _env: PlatformEnv | null = null;
-
-export async function getPlatformEnv(): Promise<PlatformEnv> {
-  if (_env) return _env;
-
-  const { getPlatformProxy } = await import("wrangler");
-  const proxy = await getPlatformProxy({ configPath: "wrangler.jsonc" });
-  _env = proxy.env as unknown as PlatformEnv;
-  return _env;
+export function getPlatformEnv(): PlatformEnv {
+  const { env } = getCloudflareContext();
+  return env as unknown as PlatformEnv;
 }

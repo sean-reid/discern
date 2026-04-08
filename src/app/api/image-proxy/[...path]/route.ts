@@ -16,7 +16,7 @@ export async function GET(
   const { path } = await params;
   const r2Key = Array.isArray(path) ? path.join("/") : path;
 
-  const env = await getPlatformEnv();
+  const env = getPlatformEnv();
   const object = await env.R2.get(r2Key);
 
   if (!object) {

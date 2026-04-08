@@ -9,6 +9,11 @@
     "dev:setup": "for f in migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f; done && cd pipeline && for f in ../migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f --config wrangler.toml; done",
     "dev:seed": "curl -s http://localhost:8788/trigger/ingest",
     "build": "next build",
+    "build:worker": "opennextjs-cloudflare build",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:pipeline": "cd pipeline && npx wrangler deploy",
+    "deploy:migrations": "for f in migrations/*.sql; do npx wrangler d1 execute discern-db --remote --file=$f; done && cd pipeline && for f in ../migrations/*.sql; do npx wrangler d1 execute discern-db --remote --file=$f --config wrangler.toml; done",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -19,6 +24,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.18.0",
     "@upstash/redis": "^1.37.0",
     "motion": "^12.38.0",
     "next": "16.2.2",

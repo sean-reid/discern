@@ -10,6 +10,11 @@
       "binding": "DB",
       "database_name": "discern-db",
       "database_id": "a25c2162-ff33-4f2d-b429-e4418f6a4339"
+    },
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "discern-db",
+      "database_id": "a25c2162-ff33-4f2d-b429-e4418f6a4339"
     }
   ],
 
@@ -17,6 +22,10 @@
   "r2_buckets": [
     {
       "binding": "R2",
+      "bucket_name": "discern-images"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
       "bucket_name": "discern-images"
     }
   ],

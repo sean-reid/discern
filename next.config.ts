@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-const nextConfig: NextConfig = {
-  serverExternalPackages: ["wrangler"],
-};
+initOpenNextCloudflareForDev();
+
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
