@@ -425,14 +425,18 @@ async function runAiOnlyGeneration(env: Env): Promise<void> {
     ];
     const start = i % generators.length;
 
+    const names = ["workers-ai", "huggingface", "pollinations"];
     let generated = null;
     for (let g = 0; g < generators.length; g++) {
       const idx = (start + g) % generators.length;
+      console.log(`[AI-Gen] Attempt ${attempts}: trying ${names[idx]} for ${category}`);
       generated = await generators[idx]();
       if (generated) break;
+      console.log(`[AI-Gen] ${names[idx]} returned nothing`);
     }
 
     if (!generated) {
+      console.log(`[AI-Gen] Attempt ${attempts}: all generators failed`);
       rejected++;
       continue;
     }
