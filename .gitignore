@@ -47,6 +47,8 @@ next-env.d.ts
 
 # claude
 .claude/
+CLAUDE.md
+AGENTS.md
 PLAN.md
 
 # playwright
