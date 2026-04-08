@@ -52,9 +52,14 @@ export default function AboutPage() {
           >
             Source code on GitHub
           </a>
-          <p className="text-xs text-muted/50">
+          <a
+            href="https://sean-reid.github.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-xs text-muted/50 hover:text-fg transition-colors"
+          >
             Built by Sean Reid
-          </p>
+          </a>
         </section>
 
       </div>
