@@ -40,23 +40,16 @@ Do the same in `pipeline/wrangler.toml`.
 
 ## 4. Run Database Migrations
 
-You need to run migrations twice: once for local dev, once for production.
-
-**From the project root:**
 ```bash
-# Remote (production)
+npm run dev:setup
+```
+
+This runs all migrations on the local D1 database. For production:
+
+```bash
 wrangler d1 execute discern-db --remote --file=migrations/0001_initial_schema.sql
 wrangler d1 execute discern-db --remote --file=migrations/0002_seed_categories.sql
 ```
-
-**From the pipeline directory** (the pipeline has its own local D1):
-```bash
-cd pipeline
-npx wrangler d1 execute discern-db --local --file=../migrations/0001_initial_schema.sql --config wrangler.toml
-npx wrangler d1 execute discern-db --local --file=../migrations/0002_seed_categories.sql --config wrangler.toml
-```
-
-The pipeline worker uses a local D1 for dev. If you skip this step, you'll get "no such table" errors when triggering ingestion.
 
 ## 5. Get Free API Keys
 
@@ -131,36 +124,34 @@ UPSTASH_REDIS_REST_TOKEN=your_token
 
 ## 9. Run Locally
 
-There are two separate things to run:
-
-**Main app** (the game, what users see):
+First time only:
 ```bash
 npm install
+cd pipeline && npm install && cd ..
+npm run dev:setup    # runs migrations on local D1
+```
+
+Then to start everything:
+```bash
 npm run dev
 ```
-This starts Next.js on http://localhost:3000. It's just a normal Next.js dev server.
 
-**Pipeline worker** (fetches images, runs in a separate terminal):
+This starts both the Next.js app (http://localhost:3000) and the pipeline worker (http://localhost:8788) in one terminal.
+
+You can also run them separately if you prefer:
 ```bash
-cd pipeline
-npm install
-npx wrangler dev --config wrangler.toml
+npm run dev:app       # just the game
+npm run dev:pipeline  # just the pipeline
 ```
-This starts the pipeline worker (usually on http://localhost:8788). It handles image ingestion, Elo recalc, and retirement.
-
-Important: use `npx wrangler dev --config wrangler.toml` from the pipeline directory. Don't run `wrangler dev` from the project root.
 
 ## 10. Trigger Initial Content Seeding
 
-The pipeline runs on cron (daily at 3am UTC) but you can trigger it manually.
-
-Start the pipeline worker first (step 9), then in another terminal:
-
+With `npm run dev` running:
 ```bash
-curl http://localhost:8788/trigger/ingest
+npm run dev:seed
 ```
 
-Check the wrangler terminal for logs. You can also trigger other jobs:
+This tells the pipeline to start pulling images. Watch the logs in the dev terminal. You can also trigger other jobs:
 ```bash
 curl http://localhost:8788/trigger/elo      # recalculate image difficulty
 curl http://localhost:8788/trigger/retire    # retire overexposed images

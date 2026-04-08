@@ -35,7 +35,10 @@ tests/              # Unit, integration, and E2E tests
 
 ```bash
 npm install
-npm run dev
+cd pipeline && npm install && cd ..
+npm run dev:setup    # first time: run migrations
+npm run dev          # starts app + pipeline in one command
+npm run dev:seed     # in another tab: trigger first image pull
 ```
 
 See [SETUP.md](SETUP.md) for full deployment instructions (Cloudflare account, API keys, database setup).
