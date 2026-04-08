@@ -1,10 +1,10 @@
 /**
  * Platform bindings for Cloudflare D1 and R2.
  *
- * Production: bindings come from the Worker environment.
+ * Production: bindings come from the Worker environment via OpenNext.
  * Local dev: bindings come from wrangler's getPlatformProxy().
  *
- * This module initializes once and caches the result.
+ * Initializes once, caches the result.
  */
 
 import type { DB } from "./db";
@@ -29,7 +29,6 @@ let _initPromise: Promise<PlatformEnv> | null = null;
 async function init(): Promise<PlatformEnv> {
   // Try Cloudflare Workers (production via OpenNext)
   try {
-    // Dynamic import - module only exists when deployed to Cloudflare
     const mod = await (new Function(
       'return import("@opennextjs/cloudflare")'
     )() as Promise<{ getCloudflareContext: () => Promise<{ env: unknown }> }>);
@@ -39,10 +38,16 @@ async function init(): Promise<PlatformEnv> {
     // Not in Workers
   }
 
-  // Local dev: use wrangler's getPlatformProxy
-  const { getPlatformProxy } = await import("wrangler");
-  const proxy = await getPlatformProxy({ configPath: "wrangler.jsonc" });
-  return proxy.env as unknown as PlatformEnv;
+  // Local dev: dynamic require to avoid Turbopack bundling wrangler/workerd
+  try {
+    const { getPlatformProxy } = await (new Function(
+      'return import("wrangler")'
+    )() as Promise<typeof import("wrangler")>);
+    const proxy = await getPlatformProxy({ configPath: "wrangler.jsonc" });
+    return proxy.env as unknown as PlatformEnv;
+  } catch (err) {
+    throw new Error(`Failed to initialize platform bindings: ${err}`);
+  }
 }
 
 /**
