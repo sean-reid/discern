@@ -232,19 +232,21 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   );
 
   console.log(`[Ingestion] ${categorySlug}: approved=${approved} rejected=${rejected} duplicate=${duplicate}`);
-  chainNext(offset);
+  await chainNext(offset);
 }
 
-function chainNext(currentOffset: number): void {
+async function chainNext(currentOffset: number): Promise<void> {
   const next = currentOffset + 1;
   if (next >= CATEGORY_SLUGS.length) {
     console.log("[Ingestion] All categories complete");
     return;
   }
   console.log(`[Ingestion] Chaining to ${CATEGORY_SLUGS[next]} (${next + 1}/${CATEGORY_SLUGS.length})`);
-  fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`).catch((err) => {
+  try {
+    await fetch(`${WORKER_URL}/trigger/real-category?offset=${next}`);
+  } catch (err) {
     console.error(`[Ingestion] Chain failed at ${next}: ${err}`);
-  });
+  }
 }
 
 // ============================================================
