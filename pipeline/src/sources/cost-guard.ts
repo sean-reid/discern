@@ -28,7 +28,7 @@ const DAILY_CAPS: Record<string, number> = {
   "huggingface": 100,      // unclear limit, stay conservative
   "pollinations": 100,     // no published limit, be respectful
   "unsplash": 40,          // 50/hr but we only run a few times/day
-  "pexels": 150,           // 200/month, spread across days
+  "pexels": 6,             // 200/month total, ~6/day to stay within budget
 };
 
 function today(): string {
@@ -46,7 +46,7 @@ function ensureToday(): void {
 /**
  * Check if a source has budget remaining today.
  */
-export function hasbudget(source: string): boolean {
+export function hasBudget(source: string): boolean {
   ensureToday();
   const cap = DAILY_CAPS[source];
   if (cap === undefined) return true; // unknown source, no cap
@@ -76,7 +76,7 @@ export function remaining(source: string): number {
  * Check budget and record a call in one step. Returns false if over budget.
  */
 export function tryUse(source: string): boolean {
-  if (!hasbudget(source)) return false;
+  if (!hasBudget(source)) return false;
   recordCall(source);
   return true;
 }
