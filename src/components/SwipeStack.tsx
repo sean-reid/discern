@@ -154,25 +154,8 @@ export function SwipeStack() {
         </AnimatePresence>
       </div>
 
-      {/* Buttons: subtle on touch, more visible on non-touch */}
-      <div className="flex gap-3 justify-center px-5 pb-4 pt-1 opacity-30 hover:opacity-100 transition-opacity md:opacity-100">
-        <button
-          onClick={() => handleSwipe("left")}
-          disabled={isSwiping || !!showResult}
-          className="flex-1 max-w-[140px] py-2.5 rounded-lg border border-red/30 text-red text-sm font-semibold transition-all active:scale-95 active:bg-red/10 disabled:opacity-40"
-          aria-label="Fake"
-        >
-          FAKE
-        </button>
-        <button
-          onClick={() => handleSwipe("right")}
-          disabled={isSwiping || !!showResult}
-          className="flex-1 max-w-[140px] py-2.5 rounded-lg border border-green/30 text-green text-sm font-semibold transition-all active:scale-95 active:bg-green/10 disabled:opacity-40"
-          aria-label="Real"
-        >
-          REAL
-        </button>
-      </div>
+      {/* Bottom safe area spacer on mobile */}
+      <div className="h-2" />
     </div>
   );
 }
