@@ -72,52 +72,53 @@ app.get("/health", (c) => c.json({ status: "healthy" }));
 // Batch 0 = first 4 categories, batch 1 = remaining 3.
 const BATCH_SIZE = 3;
 
-app.get("/trigger/real", async (c) => {
+app.get("/trigger/real", (c) => {
   const batch = parseInt(c.req.query("batch") || "0", 10);
   const start = batch * BATCH_SIZE;
-  const end = Math.min(start + BATCH_SIZE, CATEGORY_SLUGS.length);
+  const env = c.env;
 
   if (start >= CATEGORY_SLUGS.length) {
     return c.json({ type: "real", status: "done" });
   }
 
-  for (let i = start; i < end; i++) {
-    await ingestCategory(c.env, i);
-  }
+  const end = Math.min(start + BATCH_SIZE, CATEGORY_SLUGS.length);
 
-  // Chain to next batch if there are more categories
-  if (end < CATEGORY_SLUGS.length) {
-    const nextBatch = batch + 1;
-    console.log(`[Ingestion] Chaining to batch ${nextBatch}`);
-    c.executionCtx.waitUntil(fetch(`${WORKER_URL}/trigger/real?batch=${nextBatch}`));
-  } else {
-    console.log("[Ingestion] All categories complete");
-  }
+  c.executionCtx.waitUntil((async () => {
+    for (let i = start; i < end; i++) {
+      await ingestCategory(env, i);
+    }
+    if (end < CATEGORY_SLUGS.length) {
+      console.log(`[Ingestion] Chaining to batch ${batch + 1}`);
+      await fetch(`${WORKER_URL}/trigger/real?batch=${batch + 1}`);
+    } else {
+      console.log("[Ingestion] All categories complete");
+    }
+  })());
 
-  return c.json({ type: "real", status: "started", batch });
+  return c.json({ type: "real", status: "started" });
 });
 
-app.get("/trigger/ai", async (c) => {
+app.get("/trigger/ai", (c) => {
   const approved = parseInt(c.req.query("approved") || "0", 10);
   const attempt = parseInt(c.req.query("attempt") || "0", 10);
   const batchId = c.req.query("batch_id") || uuidv4();
+  const env = c.env;
 
-  const result = await runAiBatch(c.env, AI_BATCH_SIZE, attempt);
+  c.executionCtx.waitUntil((async () => {
+    const result = await runAiBatch(env, AI_BATCH_SIZE, attempt);
+    const totalApproved = approved + result.approved;
+    const nextAttempt = attempt + AI_BATCH_SIZE;
 
-  const totalApproved = approved + result.approved;
-  const nextAttempt = attempt + AI_BATCH_SIZE;
+    if (totalApproved < AI_TARGET && nextAttempt < AI_TARGET * 3) {
+      console.log(`[AI-Gen] Batch: ${result.approved} this batch, ${totalApproved} total. Chaining...`);
+      await fetch(`${WORKER_URL}/trigger/ai?approved=${totalApproved}&attempt=${nextAttempt}&batch_id=${batchId}`);
+    } else {
+      console.log(`[AI-Gen] Complete: ${totalApproved} approved in ${nextAttempt} attempts`);
+      await logIngestionBatch(env.DB, batchId, "ai", nextAttempt, totalApproved, result.rejected, 0, null);
+    }
+  })());
 
-  if (totalApproved < AI_TARGET && nextAttempt < AI_TARGET * 3) {
-    console.log(`[AI-Gen] Batch done: ${result.approved} approved this batch, ${totalApproved} total. Chaining...`);
-    c.executionCtx.waitUntil(
-      fetch(`${WORKER_URL}/trigger/ai?approved=${totalApproved}&attempt=${nextAttempt}&batch_id=${batchId}`)
-    );
-  } else {
-    console.log(`[AI-Gen] Complete: ${totalApproved} approved in ${nextAttempt} attempts`);
-    await logIngestionBatch(c.env.DB, batchId, "ai", nextAttempt, totalApproved, result.rejected, 0, null);
-  }
-
-  return c.json({ type: "ai", status: "started", approved: totalApproved });
+  return c.json({ type: "ai", status: "started" });
 });
 
 app.get("/trigger/elo", (c) => {
