@@ -1,8 +1,10 @@
 import {
+  ELO_DEFAULT,
   ELO_K_USER,
   ELO_K_IMAGE,
   ELO_K_USER_PROVISIONAL,
   ELO_PROVISIONAL_GAMES,
+  ELO_DECAY,
   ELO_MIN,
   ELO_MAX,
 } from "./constants";
@@ -21,10 +23,34 @@ export function expectedScore(userElo: number, imageElo: number): number {
 }
 
 /**
+ * Apply regression toward the mean (ELO_DEFAULT).
+ * Prevents runaway inflation/deflation by gently pulling
+ * all ratings toward 1200 each game.
+ *
+ * Guarantees: a win always returns a positive delta,
+ * a loss always returns a negative delta — decay never
+ * inverts the outcome direction.
+ */
+function applyDecay(elo: number, rawDelta: number): number {
+  const decayed = elo + rawDelta + ELO_DECAY * (ELO_DEFAULT - (elo + rawDelta));
+
+  // Ensure direction is preserved: win = positive, loss = negative
+  if (rawDelta > 0) {
+    return Math.max(elo + 1, decayed); // at least +1
+  } else if (rawDelta < 0) {
+    return Math.min(elo - 1, decayed); // at least -1
+  }
+  return decayed;
+}
+
+/**
  * Compute new Elo ratings after a swipe.
  *
- * If user guesses correctly: user Elo goes up, image Elo goes down (image was "easy").
- * If user guesses wrong: user Elo goes down, image Elo goes up (image was "hard").
+ * If user guesses correctly: user Elo goes up, image Elo goes down.
+ * If user guesses wrong: user Elo goes down, image Elo goes up.
+ *
+ * Both ratings are subject to regression toward 1200 (ELO_DECAY),
+ * preventing inflation when the game is easy or deflation when hard.
  */
 export function computeEloUpdate(
   userElo: number,
@@ -48,8 +74,8 @@ export function computeEloUpdate(
   const rawUserDelta = kUser * (actual - expected);
   const rawImageDelta = ELO_K_IMAGE * (expected - actual);
 
-  const newUserElo = clamp(userElo + rawUserDelta, ELO_MIN, ELO_MAX);
-  const newImageElo = clamp(imageElo + rawImageDelta, ELO_MIN, ELO_MAX);
+  const newUserElo = clamp(applyDecay(userElo, rawUserDelta), ELO_MIN, ELO_MAX);
+  const newImageElo = clamp(applyDecay(imageElo, rawImageDelta), ELO_MIN, ELO_MAX);
 
   return {
     newUserElo,

@@ -11,6 +11,7 @@ export const ELO_MAX = 2400;
 export const ELO_MATCH_RANGE = 200;
 export const ELO_PROVISIONAL_GAMES = 30;
 export const ELO_K_USER_PROVISIONAL = 48;
+export const ELO_DECAY = 0.005; // regression toward ELO_DEFAULT per game
 
 // --- Swipe Mechanics ---
 export const SWIPE_THRESHOLD_PX = 120;
