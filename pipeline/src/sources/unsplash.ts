@@ -4,6 +4,7 @@
 // ============================================================
 
 import { isCoolingDown, coolDown } from "./rate-limiter";
+import { tryUse } from "./cost-guard";
 
 export interface SourceImage {
   url: string;
@@ -45,7 +46,7 @@ export async function fetchUnsplashImages(
   query: string,
   count: number
 ): Promise<SourceImage[]> {
-  if (!apiKey || isCoolingDown("unsplash")) return [];
+  if (!apiKey || isCoolingDown("unsplash") || !tryUse("unsplash")) return [];
 
   // Unsplash caps per-request count at 30
   const perRequest = Math.min(count, 30);

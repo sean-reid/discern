@@ -5,6 +5,7 @@
 
 import type { SourceImage } from "./unsplash";
 import { isCoolingDown, coolDown } from "./rate-limiter";
+import { tryUse } from "./cost-guard";
 
 interface PexelsPhoto {
   id: number;
@@ -34,7 +35,7 @@ export async function fetchPexelsImages(
   query: string,
   count: number
 ): Promise<SourceImage[]> {
-  if (!apiKey || isCoolingDown("pexels")) return [];
+  if (!apiKey || isCoolingDown("pexels") || !tryUse("pexels")) return [];
 
   const perPage = Math.min(count, 80);
   // Pick a random page offset to get variety across runs

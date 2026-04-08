@@ -15,6 +15,7 @@
 // ============================================================
 
 import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
+import { tryUse, remaining } from "./cost-guard";
 
 interface GeneratedImage {
   data: ArrayBuffer;
@@ -100,7 +101,7 @@ function pickPrompt(category: string): string | null {
 export async function generateWithPollinations(
   category: string
 ): Promise<GeneratedImage | null> {
-  if (isCoolingDown("pollinations")) return null;
+  if (isCoolingDown("pollinations") || !tryUse("pollinations")) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
@@ -145,7 +146,7 @@ export async function generateWithWorkersAI(
   ai: unknown,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!ai || isCoolingDown("workers-ai")) return null;
+  if (!ai || isCoolingDown("workers-ai") || !tryUse("workers-ai")) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
@@ -212,7 +213,7 @@ export async function generateWithHuggingFace(
   hfToken: string | undefined,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!hfToken || isCoolingDown("huggingface")) return null;
+  if (!hfToken || isCoolingDown("huggingface") || !tryUse("huggingface")) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
