@@ -71,6 +71,7 @@ export function SwipeStack() {
     }
     setShowResult(null);
     setIsSwiping(false);
+    setDragProgress(0);
   }, [currentImage, onImageConsumed]);
 
   // Keyboard controls

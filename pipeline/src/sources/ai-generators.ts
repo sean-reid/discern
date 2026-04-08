@@ -166,8 +166,10 @@ export async function generateWithWorkersAI(
     const result = await aiBinding.run(
       "@cf/black-forest-labs/flux-1-schnell",
       {
-        prompt: `${prompt}, photorealistic, 8k, shot on Canon EOS R5`,
-        num_steps: 4,
+        prompt: `${prompt}, photorealistic, high resolution, sharp detail`,
+        num_steps: 8,
+        width: 1024,
+        height: 768,
       }
     );
 
@@ -243,9 +245,11 @@ export async function generateWithHuggingFace(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `${prompt}, photorealistic, high quality`,
+          inputs: `${prompt}, photorealistic, sharp detail, high resolution`,
           parameters: {
-            num_inference_steps: 4,
+            num_inference_steps: 8,
+            width: 1024,
+            height: 768,
           },
         }),
       }
