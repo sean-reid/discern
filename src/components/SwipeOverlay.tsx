@@ -1,7 +1,6 @@
 "use client";
 
 interface SwipeOverlayProps {
-  /** -1 (full left/AI) to +1 (full right/Real), 0 = centered */
   progress: number;
 }
 
@@ -11,25 +10,25 @@ export function SwipeOverlay({ progress }: SwipeOverlayProps) {
 
   return (
     <>
-      {/* AI label — left side, red */}
+      {/* AI label */}
       <div
-        className="absolute top-8 left-6 z-20 pointer-events-none"
+        className="absolute top-6 left-5 z-20 pointer-events-none"
         style={{ opacity: aiOpacity }}
       >
-        <div className="border-4 border-red-500 rounded-lg px-4 py-2 -rotate-12">
-          <span className="text-red-500 text-3xl font-black tracking-wider">
-            AI
+        <div className="border-2 border-red/80 bg-red/10 rounded-lg px-3 py-1.5 -rotate-12 backdrop-blur-sm">
+          <span className="text-red text-xl font-bold tracking-wide">
+            FAKE
           </span>
         </div>
       </div>
 
-      {/* REAL label — right side, green */}
+      {/* REAL label */}
       <div
-        className="absolute top-8 right-6 z-20 pointer-events-none"
+        className="absolute top-6 right-5 z-20 pointer-events-none"
         style={{ opacity: realOpacity }}
       >
-        <div className="border-4 border-emerald-500 rounded-lg px-4 py-2 rotate-12">
-          <span className="text-emerald-500 text-3xl font-black tracking-wider">
+        <div className="border-2 border-green/80 bg-green/10 rounded-lg px-3 py-1.5 rotate-12 backdrop-blur-sm">
+          <span className="text-green text-xl font-bold tracking-wide">
             REAL
           </span>
         </div>

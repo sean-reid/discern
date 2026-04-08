@@ -18,31 +18,31 @@ export function ResultFlash({ correct, isAi, onComplete }: ResultFlashProps) {
 
   return (
     <motion.div
-      className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl overflow-hidden"
+      className="absolute inset-0 z-50 flex items-center justify-center rounded-xl overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
       onClick={onComplete}
     >
-      {/* Frosted glass background */}
-      <div className="absolute inset-0 backdrop-blur-sm bg-black/40" />
+      <div className="absolute inset-0 backdrop-blur-md bg-black/50" />
 
-      {/* Result pill */}
       <motion.div
-        className={`relative z-10 px-8 py-5 rounded-2xl ${
+        className={`relative z-10 px-8 py-4 rounded-xl border ${
           correct
-            ? "bg-emerald-500 shadow-lg shadow-emerald-500/30"
-            : "bg-red-500 shadow-lg shadow-red-500/30"
+            ? "bg-green/15 border-green/30"
+            : "bg-red/15 border-red/30"
         }`}
-        initial={{ scale: 0.5, opacity: 0 }}
+        initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.05 }}
+        transition={{ type: "spring", stiffness: 500, damping: 28, delay: 0.03 }}
       >
-        <p className="text-white text-xl font-bold text-center">
+        <p className={`text-lg font-bold text-center ${
+          correct ? "text-green" : "text-red"
+        }`}>
           {correct ? "Correct" : "Wrong"}
         </p>
-        <p className="text-white/80 text-sm text-center mt-1">
+        <p className="text-fg/60 text-xs text-center mt-0.5">
           It was {isAi ? "AI" : "real"}
         </p>
       </motion.div>

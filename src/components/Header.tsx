@@ -4,15 +4,15 @@ import Link from "next/link";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-      <Link href="/" className="text-xl font-black tracking-tight">
-        Discern
+    <header className="flex items-center justify-between px-5 pt-3 pb-1">
+      <Link href="/" className="text-base font-semibold tracking-tight text-fg/80">
+        discern
       </Link>
       <Link
         href="/stats"
-        className="text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        className="text-xs text-muted hover:text-fg transition-colors"
       >
-        Stats
+        stats
       </Link>
     </header>
   );

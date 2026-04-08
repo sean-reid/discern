@@ -94,11 +94,11 @@ export function SwipeStack() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-zinc-200 border-t-zinc-800 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-zinc-500">Loading images...</p>
+      <div className="flex-1 flex flex-col">
+        <div className="relative flex-1 mx-4 my-2">
+          <div className="absolute inset-0 rounded-xl shimmer" />
         </div>
+        <div className="h-14" />
       </div>
     );
   }
@@ -106,12 +106,7 @@ export function SwipeStack() {
   if (!currentImage) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center">
-          <p className="text-xl font-semibold mb-2">No more images!</p>
-          <p className="text-zinc-500">
-            We&apos;re adding more. Check back soon.
-          </p>
-        </div>
+        <p className="text-sm text-muted">No more images right now</p>
       </div>
     );
   }
@@ -159,21 +154,21 @@ export function SwipeStack() {
         </AnimatePresence>
       </div>
 
-      {/* Button fallback for desktop/accessibility */}
-      <div className="flex gap-4 justify-center px-4 pb-4">
+      {/* Buttons */}
+      <div className="flex gap-3 justify-center px-5 pb-5 pt-2">
         <button
           onClick={() => handleSwipe("left")}
           disabled={isSwiping || !!showResult}
-          className="flex-1 max-w-[160px] py-3 rounded-full bg-red-100 text-red-600 font-bold text-lg transition-all active:scale-95 disabled:opacity-50 dark:bg-red-900/30 dark:text-red-400"
-          aria-label="This is AI-generated"
+          className="flex-1 max-w-[140px] py-2.5 rounded-lg border border-red/30 text-red text-sm font-semibold transition-all active:scale-95 active:bg-red/10 disabled:opacity-40"
+          aria-label="Fake"
         >
-          AI
+          FAKE
         </button>
         <button
           onClick={() => handleSwipe("right")}
           disabled={isSwiping || !!showResult}
-          className="flex-1 max-w-[160px] py-3 rounded-full bg-emerald-100 text-emerald-600 font-bold text-lg transition-all active:scale-95 disabled:opacity-50 dark:bg-emerald-900/30 dark:text-emerald-400"
-          aria-label="This is a real photo"
+          className="flex-1 max-w-[140px] py-2.5 rounded-lg border border-green/30 text-green text-sm font-semibold transition-all active:scale-95 active:bg-green/10 disabled:opacity-40"
+          aria-label="Real"
         >
           REAL
         </button>

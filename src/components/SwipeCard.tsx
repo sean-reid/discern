@@ -23,7 +23,7 @@ export function SwipeCard({
   onDragProgress,
 }: SwipeCardProps) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-300, 0, 300], [-15, 0, 15]);
+  const rotate = useTransform(x, [-300, 0, 300], [-12, 0, 12]);
   const [scope, animate] = useAnimate();
 
   x.on("change", (latest) => {
@@ -33,7 +33,7 @@ export function SwipeCard({
 
   async function flyOut(direction: "left" | "right") {
     const target = direction === "left" ? -600 : 600;
-    await animate(scope.current, { x: target, opacity: 0 }, { duration: 0.3 });
+    await animate(scope.current, { x: target, opacity: 0 }, { duration: 0.25 });
     onSwipe(direction);
   }
 
@@ -56,16 +56,15 @@ export function SwipeCard({
       return;
     }
 
-    // Below threshold: snap back
-    animate(scope.current, { x: 0 }, { type: "spring", stiffness: 300, damping: 30 });
+    animate(scope.current, { x: 0 }, { type: "spring", stiffness: 400, damping: 30 });
     onDragProgress(0);
   }
 
   if (!isTop) {
     return (
       <motion.div
-        className="absolute inset-0 rounded-2xl overflow-hidden"
-        style={{ scale: 0.95, y: 8 }}
+        className="absolute inset-0 rounded-xl overflow-hidden border border-white/5"
+        style={{ scale: 0.96, y: 6 }}
       >
         <img
           src={imageUrl}
@@ -73,7 +72,7 @@ export function SwipeCard({
           className="w-full h-full object-cover"
           draggable={false}
         />
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/30" />
       </motion.div>
     );
   }
@@ -81,10 +80,10 @@ export function SwipeCard({
   return (
     <motion.div
       ref={scope}
-      className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none rounded-2xl overflow-hidden shadow-2xl"
+      className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none rounded-xl overflow-hidden shadow-lg shadow-black/40 border border-white/10"
       style={{ x, rotate }}
       drag="x"
-      dragElastic={0.8}
+      dragElastic={0.7}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
     >

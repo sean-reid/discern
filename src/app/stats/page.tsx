@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { HydrationGuard } from "@/components/HydrationGuard";
 import { Header } from "@/components/Header";
 import { useGameStore } from "@/stores/game-store";
@@ -10,62 +11,74 @@ function StatsContent() {
   const accuracyPct = Math.round(stats.accuracy * 100);
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-white dark:bg-zinc-950 mx-auto w-full max-w-lg">
+    <div className="flex flex-col min-h-[100dvh] mx-auto w-full max-w-lg">
       <Header />
 
-      <div className="flex-1 px-6 py-8">
-        <h1 className="text-2xl font-bold mb-8">Your Stats</h1>
-
-        {/* Elo Rating - large */}
+      <div className="flex-1 px-5 py-6">
+        {/* Elo */}
         <div className="text-center mb-8">
-          <p className="text-sm text-zinc-500 uppercase tracking-wider mb-1">
-            Rating
+          <p className="text-[10px] text-muted uppercase tracking-widest mb-1">
+            rating
           </p>
-          <p className="text-6xl font-black">{Math.round(stats.elo)}</p>
+          <p className="text-5xl font-black tabular-nums">{Math.round(stats.elo)}</p>
         </div>
 
-        {/* Stat grid */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <StatCard label="Played" value={stats.totalPlayed.toString()} />
-          <StatCard label="Correct" value={stats.totalCorrect.toString()} />
-          <StatCard label="Accuracy" value={`${accuracyPct}%`} />
-          <StatCard
-            label="Best Streak"
-            value={stats.bestStreak.toString()}
-          />
+        {/* Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          <StatCard label="played" value={stats.totalPlayed} delay={0} />
+          <StatCard label="correct" value={stats.totalCorrect} delay={0.05} />
+          <StatCard label="accuracy" value={`${accuracyPct}%`} delay={0.1} />
+          <StatCard label="best streak" value={stats.bestStreak} delay={0.15} />
         </div>
 
-        {/* Current streak */}
+        {/* Streak */}
         {stats.currentStreak > 0 && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center mb-8">
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              Current Streak
+          <motion.div
+            className="rounded-xl border border-green/20 bg-green/5 p-4 text-center mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-[10px] text-green/70 uppercase tracking-widest">
+              current streak
             </p>
-            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
+            <p className="text-3xl font-bold text-green tabular-nums">
               {stats.currentStreak}
             </p>
-          </div>
+          </motion.div>
         )}
 
         <Link
           href="/play"
-          className="block w-full py-3 text-center bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-full font-semibold transition-transform active:scale-95"
+          className="block w-full py-3 text-center bg-fg text-bg rounded-lg font-semibold text-sm transition-transform active:scale-[0.98]"
         >
-          Keep Playing
+          Keep playing
         </Link>
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  delay,
+}: {
+  label: string;
+  value: string | number;
+  delay: number;
+}) {
   return (
-    <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl p-4 text-center">
-      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+    <motion.div
+      className="rounded-xl border border-card-border bg-card p-4 text-center"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      <p className="text-[10px] text-muted uppercase tracking-widest mb-1">
         {label}
       </p>
-      <p className="text-2xl font-bold">{value}</p>
-    </div>
+      <p className="text-xl font-bold tabular-nums">{value}</p>
+    </motion.div>
   );
 }
 
