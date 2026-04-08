@@ -6,7 +6,7 @@
     "dev": "concurrently -n app,pipeline -c blue,magenta \"next dev\" \"cd pipeline && npx wrangler dev --config wrangler.toml\"",
     "dev:app": "next dev",
     "dev:pipeline": "cd pipeline && npx wrangler dev --config wrangler.toml",
-    "dev:setup": "cd pipeline && for f in ../migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f --config wrangler.toml; done",
+    "dev:setup": "for f in migrations/*.sql; do npx wrangler d1 execute discern-db --local --file=$f; done",
     "dev:seed": "curl -s http://localhost:8788/trigger/ingest",
     "build": "next build",
     "start": "next start",
@@ -44,6 +44,7 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.3"
+    "vitest": "^4.1.3",
+    "wrangler": "^4.81.0"
   }
 }

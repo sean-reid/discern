@@ -15,6 +15,7 @@ import { fetchPexelsImages } from "./sources/pexels";
 import {
   generateWithPollinations,
   generateWithWorkersAI,
+  generateWithHuggingFace,
   randomCategory,
 } from "./sources/ai-generators";
 import { validateImage } from "./processing/validator";
@@ -42,6 +43,7 @@ interface Env {
   AI?: unknown; // Cloudflare Workers AI binding (free tier)
   UNSPLASH_ACCESS_KEY: string;
   PEXELS_API_KEY: string;
+  HF_TOKEN?: string; // Hugging Face API token (free tier)
 }
 
 // ---- Hono app (for HTTP routes if needed, e.g. health check) ----
@@ -278,16 +280,20 @@ async function runImageIngestion(env: Env): Promise<void> {
 
     let generated = null;
 
-    // Alternate between generators for model diversity
-    if (i % 2 === 0) {
-      generated = await generateWithPollinations(category);
-    } else {
+    // Rotate between all 3 generators for model diversity
+    const generatorIndex = i % 3;
+    if (generatorIndex === 0) {
       generated = await generateWithWorkersAI(env.AI, category);
-      // Fall back to Pollinations if Workers AI isn't available
-      if (!generated) {
-        generated = await generateWithPollinations(category);
-      }
+    } else if (generatorIndex === 1) {
+      generated = await generateWithHuggingFace(env.HF_TOKEN, category);
+    } else {
+      generated = await generateWithPollinations(category);
     }
+
+    // Fall back through the chain if one fails
+    if (!generated) generated = await generateWithWorkersAI(env.AI, category);
+    if (!generated) generated = await generateWithHuggingFace(env.HF_TOKEN, category);
+    if (!generated) generated = await generateWithPollinations(category);
 
     if (!generated) {
       totalRejected++;

@@ -8,6 +8,10 @@
 // 2. Pollinations.ai
 //    - Completely free, no API key, no signup
 //    - Just an HTTP GET with the prompt in the URL
+//
+// 3. Hugging Face Inference API
+//    - Free tier, needs HF_TOKEN
+//    - Stable Diffusion XL, Flux, etc.
 // ============================================================
 
 interface GeneratedImage {
@@ -203,6 +207,75 @@ export async function generateWithWorkersAI(
     };
   } catch (err) {
     console.error(`[AI-Gen] Workers AI error: ${err}`);
+    return null;
+  }
+}
+
+/**
+ * Generate an image using Hugging Face Inference API (free tier).
+ * Uses Stable Diffusion XL or Flux models.
+ */
+export async function generateWithHuggingFace(
+  hfToken: string | undefined,
+  category: string
+): Promise<GeneratedImage | null> {
+  if (!hfToken) return null;
+
+  const categoryPrompts = PROMPTS[category];
+  if (!categoryPrompts) return null;
+
+  const prompt =
+    categoryPrompts[Math.floor(Math.random() * categoryPrompts.length)];
+
+  // Rotate between models for diversity
+  const models = [
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    "black-forest-labs/FLUX.1-schnell",
+  ];
+  const model = models[Math.floor(Math.random() * models.length)];
+
+  try {
+    const response = await fetch(
+      `https://api-inference.huggingface.co/models/${model}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${hfToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: `${prompt}, photorealistic, high quality`,
+          parameters: {
+            num_inference_steps: 4,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.log(
+        `[AI-Gen] HuggingFace ${response.status} for ${model}: ${text.slice(0, 200)}`
+      );
+      return null;
+    }
+
+    const data = await response.arrayBuffer();
+
+    if (data.byteLength < 5000) {
+      console.log(
+        `[AI-Gen] HuggingFace response too small (${data.byteLength} bytes)`
+      );
+      return null;
+    }
+
+    return {
+      data,
+      model: `hf-${model.split("/").pop()}`,
+      prompt,
+    };
+  } catch (err) {
+    console.error(`[AI-Gen] HuggingFace error: ${err}`);
     return null;
   }
 }

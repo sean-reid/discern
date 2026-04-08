@@ -2,6 +2,9 @@ name = "discern-pipeline"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+[dev]
+persist_to = "../.wrangler/state"
+
 # Cron triggers: image ingestion, elo recalc, retirement
 [triggers]
 crons = ["0 3 * * *", "0 4 * * *", "0 5 * * *"]
@@ -25,3 +28,4 @@ binding = "AI"
 [vars]
 UNSPLASH_ACCESS_KEY = ""
 PEXELS_API_KEY = ""
+HF_TOKEN = ""
