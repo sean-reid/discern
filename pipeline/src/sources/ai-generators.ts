@@ -182,8 +182,7 @@ export async function generateWithWorkersAI(
       "@cf/black-forest-labs/flux-1-schnell",
       {
         prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
-        negative_prompt: NEGATIVE_PROMPT,
-        num_steps: 20,
+        num_steps: 8,
         width: 768,
         height: 1024,
       }
@@ -256,8 +255,7 @@ export async function generateWithHuggingFace(
         body: JSON.stringify({
           inputs: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
           parameters: {
-            negative_prompt: NEGATIVE_PROMPT,
-            num_inference_steps: 20,
+            num_inference_steps: 8,
             width: 768,
             height: 1024,
           },
