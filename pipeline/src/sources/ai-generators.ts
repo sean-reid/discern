@@ -245,13 +245,18 @@ export async function generateWithHuggingFace(
       }
     );
 
+    if (response.status === 402) {
+      console.log("[AI-Gen] HuggingFace monthly credits depleted, disabling");
+      markExhausted("huggingface");
+      return null;
+    }
+
     if (response.status === 429) {
       coolDown("huggingface");
       return null;
     }
 
     if (response.status === 503) {
-      // Model loading, cool down briefly
       coolDown("huggingface", 30_000);
       return null;
     }
