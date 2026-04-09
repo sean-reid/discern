@@ -59,7 +59,8 @@ const CATEGORY_QUERIES: Record<string, string[]> = {
 };
 
 const CATEGORY_SLUGS = Object.keys(CATEGORY_QUERIES);
-const IMAGES_PER_SOURCE = 2;
+const UNSPLASH_IMAGES_PER_REQUEST = 2;
+const PEXELS_IMAGES_PER_REQUEST = 2;
 const PIXABAY_IMAGES_PER_REQUEST = 5;
 // Per-generator attempt counts per trigger
 const WORKERS_AI_PER_BATCH = 5;
@@ -191,14 +192,14 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   const sourceResults: Array<{ source: string; images: SourceImage[] }> = [];
 
   try {
-    const imgs = await fetchUnsplashImages(env.UNSPLASH_ACCESS_KEY, query, IMAGES_PER_SOURCE);
+    const imgs = await fetchUnsplashImages(env.UNSPLASH_ACCESS_KEY, query, UNSPLASH_IMAGES_PER_REQUEST);
     sourceResults.push({ source: "unsplash", images: imgs });
   } catch (err) {
     errors.push(`Unsplash: ${err}`);
   }
 
   try {
-    const imgs = await fetchPexelsImages(env.PEXELS_API_KEY, query, IMAGES_PER_SOURCE);
+    const imgs = await fetchPexelsImages(env.PEXELS_API_KEY, query, PEXELS_IMAGES_PER_REQUEST);
     sourceResults.push({ source: "pexels", images: imgs });
   } catch (err) {
     errors.push(`Pexels: ${err}`);
