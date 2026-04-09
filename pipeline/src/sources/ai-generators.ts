@@ -7,6 +7,7 @@
 // ============================================================
 
 import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
+import { tryUse } from "./cost-guard";
 import { pickPrompt, cameraStyle, NEGATIVE_PROMPT, TEXTURE_BOOST } from "./ai-prompts";
 export { randomCategory } from "./ai-prompts";
 
@@ -133,7 +134,7 @@ export async function generateWithHuggingFace(
   hfToken: string | undefined,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!hfToken) return null;
+  if (!hfToken || !tryUse("huggingface")) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
