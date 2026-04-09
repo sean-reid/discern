@@ -270,12 +270,13 @@ async function runAiBatch(
     if (!categoryId) continue;
 
     // Build list of available generators — skip cooled-down/exhausted sources
+    // Order: Workers AI (fastest, free neurons), HF (fast, credits), Pollinations (slow fallback)
     const available: Array<{ name: string; fn: () => Promise<GeneratedImage | null> }> = [];
-    if (!isCoolingDown("huggingface")) {
-      available.push({ name: "huggingface", fn: () => generateWithHuggingFace(env.HF_TOKEN, category) });
-    }
     if (!isCoolingDown("workers-ai")) {
       available.push({ name: "workers-ai", fn: () => generateWithWorkersAI(env.AI, category) });
+    }
+    if (!isCoolingDown("huggingface")) {
+      available.push({ name: "huggingface", fn: () => generateWithHuggingFace(env.HF_TOKEN, category) });
     }
     if (!isCoolingDown("pollinations")) {
       available.push({ name: "pollinations", fn: () => generateWithPollinations(category) });
