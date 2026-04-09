@@ -34,8 +34,13 @@ export function coolDown(source: string, durationMs: number = DEFAULT_COOLDOWN_M
 }
 
 /**
- * Mark a source as exhausted (longer cooldown).
+ * Mark a source as exhausted until its budget resets (midnight UTC).
  */
 export function markExhausted(source: string): void {
-  coolDown(source, EXHAUSTED_COOLDOWN_MS);
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setUTCDate(midnight.getUTCDate() + 1);
+  midnight.setUTCHours(0, 0, 0, 0);
+  const msUntilReset = midnight.getTime() - now.getTime();
+  coolDown(source, msUntilReset);
 }

@@ -252,7 +252,7 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
 // AI Image Generation
 // ============================================================
 
-const GENERATOR_NAMES = ["workers-ai", "huggingface", "pollinations"];
+const GENERATOR_NAMES = ["huggingface", "workers-ai", "pollinations"];
 
 async function runAiBatch(
   env: Env,
@@ -270,9 +270,10 @@ async function runAiBatch(
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
 
+    // Order: HF (fastest ~5s), Workers AI (fast but daily cap), Pollinations (slow ~90s, fallback)
     const generators = [
-      () => generateWithWorkersAI(env.AI, category),
       () => generateWithHuggingFace(env.HF_TOKEN, category),
+      () => generateWithWorkersAI(env.AI, category),
       () => generateWithPollinations(category),
     ];
     const start = attemptNum % generators.length;

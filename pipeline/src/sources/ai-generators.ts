@@ -35,7 +35,7 @@ export async function generateWithPollinations(
   try {
     const response = await fetch(url, {
       headers: { Accept: "image/jpeg" },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(120_000),
     });
 
     if (response.status === 429) {
