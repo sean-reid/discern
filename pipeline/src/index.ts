@@ -94,16 +94,33 @@ app.get("/trigger/real", (c) => {
   return c.json({ type: "real", status: "started" });
 });
 
+// Per-generator triggers — separate cron jobs avoid waitUntil timeout
+app.get("/trigger/ai/workers", (c) => {
+  const env = c.env;
+  c.executionCtx.waitUntil(runGeneratorBatch(env, "workers-ai", WORKERS_AI_PER_BATCH,
+    (cat) => generateWithWorkersAI(env.AI, cat)));
+  return c.json({ type: "ai/workers", status: "started" });
+});
+
+app.get("/trigger/ai/hf", (c) => {
+  const env = c.env;
+  c.executionCtx.waitUntil(runGeneratorBatch(env, "huggingface", HF_PER_BATCH,
+    (cat) => generateWithHuggingFace(env.HF_TOKEN, cat)));
+  return c.json({ type: "ai/hf", status: "started" });
+});
+
+app.get("/trigger/ai/pollinations", (c) => {
+  const env = c.env;
+  c.executionCtx.waitUntil(runGeneratorBatch(env, "pollinations", POLLINATIONS_PER_BATCH,
+    (cat) => generateWithPollinations(cat)));
+  return c.json({ type: "ai/pollinations", status: "started" });
+});
+
+// Legacy route — triggers all three sequentially (may timeout)
 app.get("/trigger/ai", (c) => {
   const env = c.env;
-  const batchId = uuidv4();
-
-  c.executionCtx.waitUntil((async () => {
-    const result = await runAiBatch(env);
-    await logIngestionBatch(env.DB, batchId, "ai", result.attempts, result.approved, result.rejected, 0, null);
-    console.log(`[AI-Gen] Batch: approved=${result.approved} rejected=${result.rejected} attempts=${result.attempts}`);
-  })());
-
+  c.executionCtx.waitUntil(runGeneratorBatch(env, "workers-ai", WORKERS_AI_PER_BATCH,
+    (cat) => generateWithWorkersAI(env.AI, cat)));
   return c.json({ type: "ai", status: "started" });
 });
 
@@ -257,100 +274,74 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
 // AI Image Generation
 // ============================================================
 
-async function runAiBatch(
-  env: Env
-): Promise<{ approved: number; rejected: number; attempts: number }> {
-  let approved = 0;
-  let rejected = 0;
-  let attempts = 0;
-
-  // Run each generator independently with its own allocation
-  if (!isCoolingDown("workers-ai")) {
-    console.log(`[AI-Gen] Running Workers AI (${WORKERS_AI_PER_BATCH} attempts)`);
-    for (let i = 0; i < WORKERS_AI_PER_BATCH; i++) {
-      if (isCoolingDown("workers-ai")) break;
-      attempts++;
-      const r = await tryGenerate(env, "workers-ai", () => generateWithWorkersAI(env.AI, randomCategory()));
-      if (r === "approved") approved++;
-      else if (r === "rejected") rejected++;
-    }
-  }
-
-  if (!isCoolingDown("huggingface")) {
-    console.log(`[AI-Gen] Running HuggingFace (${HF_PER_BATCH} attempts)`);
-    for (let i = 0; i < HF_PER_BATCH; i++) {
-      if (isCoolingDown("huggingface")) break;
-      attempts++;
-      const r = await tryGenerate(env, "huggingface", () => generateWithHuggingFace(env.HF_TOKEN, randomCategory()));
-      if (r === "approved") approved++;
-      else if (r === "rejected") rejected++;
-    }
-  }
-
-  if (!isCoolingDown("pollinations")) {
-    console.log(`[AI-Gen] Running Pollinations (${POLLINATIONS_PER_BATCH} attempts)`);
-    for (let i = 0; i < POLLINATIONS_PER_BATCH; i++) {
-      if (isCoolingDown("pollinations")) break;
-      attempts++;
-      const r = await tryGenerate(env, "pollinations", () => generateWithPollinations(randomCategory()));
-      if (r === "approved") approved++;
-      else if (r === "rejected") rejected++;
-    }
-  }
-
-  return { approved, rejected, attempts };
-}
-
-async function tryGenerate(
+async function runGeneratorBatch(
   env: Env,
   name: string,
-  generate: () => Promise<GeneratedImage | null>
-): Promise<"approved" | "rejected" | "cooled"> {
-  const category = randomCategory();
-  const categoryId = await getCategoryId(env.DB, category);
-  if (!categoryId) return "rejected";
+  count: number,
+  generate: (category: string) => Promise<GeneratedImage | null>
+): Promise<void> {
+  const batchId = uuidv4();
+  let approved = 0;
+  let rejected = 0;
 
-  console.log(`[AI-Gen] Trying ${name} for ${category}`);
-  const generated = await generate();
+  console.log(`[AI-Gen] ${name}: starting ${count} attempts`);
 
-  if (!generated) return "cooled";
-
-  console.log(`[AI-Gen] ${name}: ${Math.round(generated.data.byteLength / 1024)}KB`);
-
-  try {
-    const validation = validateImage(generated.data);
-    if (!validation.valid) {
-      console.log(`[AI-Gen] Rejected: ${validation.reason}`);
-      return "rejected";
+  for (let i = 0; i < count; i++) {
+    if (isCoolingDown(name)) {
+      console.log(`[AI-Gen] ${name}: cooled down, stopping`);
+      break;
     }
 
-    const hash = await computeContentHash(generated.data);
-    if (await isDuplicate(env.DB, hash)) return "rejected";
+    const category = randomCategory();
+    const categoryId = await getCategoryId(env.DB, category);
+    if (!categoryId) continue;
 
-    const imageId = uuidv4();
-    const ext = validation.format === "jpeg" ? "jpg" : validation.format;
-    const r2Key = `ai/${category}/${imageId}.${ext}`;
+    console.log(`[AI-Gen] ${name} attempt ${i + 1}: ${category}`);
+    const generated = await generate(category);
 
-    await env.R2.put(r2Key, generated.data, {
-      httpMetadata: { contentType: `image/${validation.format === "jpeg" ? "jpeg" : validation.format}` },
-      customMetadata: { model: generated.model },
-    });
+    if (!generated) { rejected++; continue; }
 
-    await insertImage(env.DB, {
-      id: imageId, r2Key, isAi: true, categoryId,
-      source: generated.model, sourceId: null, sourceUrl: null,
-      photographer: null, aiModel: generated.model, aiPrompt: generated.prompt, phash: hash,
-      width: validation.width, height: validation.height,
-      fileSizeBytes: validation.fileSize, exifConfidence: 0,
-      status: "approved",
-    });
+    console.log(`[AI-Gen] ${name}: ${Math.round(generated.data.byteLength / 1024)}KB`);
 
-    console.log(`[AI-Gen] Saved ${imageId} (${generated.model}, ${category})`);
-    return "approved";
-  } catch (err) {
-    console.error(`[AI-Gen] Error: ${err}`);
-    return "rejected";
+    try {
+      const validation = validateImage(generated.data);
+      if (!validation.valid) {
+        console.log(`[AI-Gen] Rejected: ${validation.reason}`);
+        rejected++;
+        continue;
+      }
+
+      const hash = await computeContentHash(generated.data);
+      if (await isDuplicate(env.DB, hash)) continue;
+
+      const imageId = uuidv4();
+      const ext = validation.format === "jpeg" ? "jpg" : validation.format;
+      const r2Key = `ai/${category}/${imageId}.${ext}`;
+
+      await env.R2.put(r2Key, generated.data, {
+        httpMetadata: { contentType: `image/${validation.format === "jpeg" ? "jpeg" : validation.format}` },
+        customMetadata: { model: generated.model },
+      });
+
+      await insertImage(env.DB, {
+        id: imageId, r2Key, isAi: true, categoryId,
+        source: generated.model, sourceId: null, sourceUrl: null,
+        photographer: null, aiModel: generated.model, aiPrompt: generated.prompt, phash: hash,
+        width: validation.width, height: validation.height,
+        fileSizeBytes: validation.fileSize, exifConfidence: 0,
+        status: "approved",
+      });
+
+      approved++;
+      console.log(`[AI-Gen] Saved ${imageId} (${generated.model}, ${category})`);
+    } catch (err) {
+      console.error(`[AI-Gen] Error: ${err}`);
+      rejected++;
+    }
   }
+
+  await logIngestionBatch(env.DB, batchId, `ai-${name}`, count, approved, rejected, 0, null);
+  console.log(`[AI-Gen] ${name}: approved=${approved} rejected=${rejected}`);
 }
 
 // ============================================================
