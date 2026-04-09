@@ -10,7 +10,7 @@ import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
 import { pickPrompt, cameraStyle, NEGATIVE_PROMPT } from "./ai-prompts";
 export { randomCategory } from "./ai-prompts";
 
-interface GeneratedImage {
+export interface GeneratedImage {
   data: ArrayBuffer;
   model: string;
   prompt: string;

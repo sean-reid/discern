@@ -16,7 +16,9 @@ import {
   generateWithWorkersAI,
   generateWithHuggingFace,
   randomCategory,
+  type GeneratedImage,
 } from "./sources/ai-generators";
+import { isCoolingDown } from "./sources/rate-limiter";
 import { validateImage } from "./processing/validator";
 import { computeContentHash, isDuplicate } from "./processing/hasher";
 import { analyzeExif } from "./processing/exif-analyzer";
@@ -252,8 +254,6 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
 // AI Image Generation
 // ============================================================
 
-const GENERATOR_NAMES = ["huggingface", "workers-ai", "pollinations"];
-
 async function runAiBatch(
   env: Env,
   maxAttempts: number,
@@ -265,26 +265,33 @@ async function runAiBatch(
   let rejected = 0;
 
   for (let i = 0; i < maxAttempts; i++) {
-    const attemptNum = startAttempt + i;
     const category = randomCategory();
     const categoryId = await getCategoryId(env.DB, category);
     if (!categoryId) continue;
 
-    // Order: HF (fastest ~5s), Workers AI (fast but daily cap), Pollinations (slow ~90s, fallback)
-    const generators = [
-      () => generateWithHuggingFace(env.HF_TOKEN, category),
-      () => generateWithWorkersAI(env.AI, category),
-      () => generateWithPollinations(category),
-    ];
-    const start = attemptNum % generators.length;
+    // Build list of available generators — skip cooled-down/exhausted sources
+    const available: Array<{ name: string; fn: () => Promise<GeneratedImage | null> }> = [];
+    if (!isCoolingDown("huggingface")) {
+      available.push({ name: "huggingface", fn: () => generateWithHuggingFace(env.HF_TOKEN, category) });
+    }
+    if (!isCoolingDown("workers-ai")) {
+      available.push({ name: "workers-ai", fn: () => generateWithWorkersAI(env.AI, category) });
+    }
+    if (!isCoolingDown("pollinations")) {
+      available.push({ name: "pollinations", fn: () => generateWithPollinations(category) });
+    }
 
-    let generated = null;
-    for (let g = 0; g < generators.length; g++) {
-      const idx = (start + g) % generators.length;
-      console.log(`[AI-Gen] Attempt ${attemptNum + 1}: trying ${GENERATOR_NAMES[idx]} for ${category}`);
-      generated = await generators[idx]();
+    if (available.length === 0) {
+      console.log("[AI-Gen] All generators cooled down, stopping batch");
+      break;
+    }
+
+    let generated: GeneratedImage | null = null;
+    for (const gen of available) {
+      console.log(`[AI-Gen] Attempt ${startAttempt + i + 1}: trying ${gen.name} for ${category}`);
+      generated = await gen.fn();
       if (generated) {
-        console.log(`[AI-Gen] ${GENERATOR_NAMES[idx]}: ${Math.round(generated.data.byteLength / 1024)}KB`);
+        console.log(`[AI-Gen] ${gen.name}: ${Math.round(generated.data.byteLength / 1024)}KB`);
         break;
       }
     }
