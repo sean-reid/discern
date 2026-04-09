@@ -24,7 +24,10 @@ export const CAMERA_STYLES = [
   "Panasonic S5 II, 50mm f/1.8, smooth video-like rendering",
 ];
 
-export const NEGATIVE_PROMPT = "blurry, low quality, distorted, watermark, text, logo, cartoon, illustration, painting, drawing, render, CGI, plastic skin, extra fingers, deformed, artificial, fake looking";
+export const NEGATIVE_PROMPT = "blurry, low quality, distorted, watermark, text, logo, cartoon, illustration, painting, drawing, render, CGI, plastic skin, extra fingers, deformed, artificial, fake looking, smooth texture, oil painting texture, airbrushed, plastic, waxy skin, oversaturated";
+
+// Texture terms appended to positive prompts for models that don't support negative prompts (Flux Schnell)
+export const TEXTURE_BOOST = "film grain, natural texture, sensor noise, fine detail, skin pores visible";
 
 export const PROMPTS: Record<string, string[]> = {
   people: [

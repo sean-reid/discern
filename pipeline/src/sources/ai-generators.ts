@@ -7,7 +7,7 @@
 // ============================================================
 
 import { isCoolingDown, coolDown, markExhausted } from "./rate-limiter";
-import { pickPrompt, cameraStyle, NEGATIVE_PROMPT } from "./ai-prompts";
+import { pickPrompt, cameraStyle, NEGATIVE_PROMPT, TEXTURE_BOOST } from "./ai-prompts";
 export { randomCategory } from "./ai-prompts";
 
 export interface GeneratedImage {
@@ -88,7 +88,7 @@ export async function generateWithWorkersAI(
     const result = await aiBinding.run(
       "@cf/black-forest-labs/flux-1-schnell",
       {
-        prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
+        prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail, ${TEXTURE_BOOST}`,
         steps: 8,
       }
     );
@@ -154,11 +154,14 @@ export async function generateWithHuggingFace(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
+          inputs: model.includes("FLUX")
+            ? `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail, ${TEXTURE_BOOST}`
+            : `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
           parameters: {
-            num_inference_steps: 8,
+            num_inference_steps: model.includes("FLUX") ? 8 : 20,
             width: 1024,
             height: 1024,
+            ...(model.includes("stable-diffusion") ? { negative_prompt: NEGATIVE_PROMPT } : {}),
           },
         }),
         signal: AbortSignal.timeout(30_000),
