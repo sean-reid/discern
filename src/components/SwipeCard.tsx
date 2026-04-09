@@ -16,27 +16,21 @@ import { SWIPE_THRESHOLD_PX, SWIPE_VELOCITY_THRESHOLD } from "@/lib/constants";
 interface SwipeCardProps {
   imageUrl: string;
   imageId: string;
-  imageWidth: number;
-  imageHeight: number;
   isTop: boolean;
   onSwipe: (direction: "left" | "right") => void;
   onDragProgress?: (progress: number) => void;
   overlayOpacity?: number;
 }
 
-// Deterministic random crop on the overflow axis only.
-// Card is always portrait, so:
-//   landscape/square images overflow horizontally → randomize X
-//   portrait images overflow vertically → randomize Y
-function cropPosition(id: string, w: number, h: number): string {
-  const hash = id.charCodeAt(0) + id.charCodeAt(1);
-  const pct = 20 + (hash % 61); // 20-80%, avoids extreme edges
-
-  if (w >= h) {
-    return `${pct}% 50%`;
-  } else {
-    return `50% ${pct}%`;
-  }
+// Deterministic random crop position per image.
+// Randomizes both axes gently (30-70%) so the crop isn't always centered,
+// regardless of image or card aspect ratio.
+function cropPosition(id: string): string {
+  const h1 = id.charCodeAt(0) + id.charCodeAt(1);
+  const h2 = id.charCodeAt(2) + id.charCodeAt(3);
+  const x = 30 + (h1 % 41); // 30-70%
+  const y = 30 + (h2 % 41); // 30-70%
+  return `${x}% ${y}%`;
 }
 
 export interface SwipeCardHandle {
@@ -76,8 +70,8 @@ function computeGlowShadow(progress: number): string {
 
 
 export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
-  function SwipeCard({ imageUrl, imageId, imageWidth, imageHeight, isTop, onSwipe, onDragProgress, overlayOpacity }, ref) {
-    const objPos = cropPosition(imageId, imageWidth, imageHeight);
+  function SwipeCard({ imageUrl, imageId, isTop, onSwipe, onDragProgress, overlayOpacity }, ref) {
+    const objPos = cropPosition(imageId);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-300, 0, 300], [-12, 0, 12]);
     const [scope, animate] = useAnimate();

@@ -116,8 +116,6 @@ export function SwipeStack() {
           <SwipeCard
             imageUrl={nextImage.url}
             imageId={nextImage.id}
-            imageWidth={nextImage.width}
-            imageHeight={nextImage.height}
             isTop={false}
             onSwipe={() => {}}
             overlayOpacity={1 - Math.pow(Math.max(0, dragAbs - 0.4) / 0.6, 2)}
@@ -129,8 +127,6 @@ export function SwipeStack() {
           key={currentImage.id}
           imageUrl={currentImage.url}
           imageId={currentImage.id}
-          imageWidth={currentImage.width}
-          imageHeight={currentImage.height}
           isTop={true}
           onSwipe={submitSwipe}
           onDragProgress={setDragAbs}
