@@ -23,13 +23,14 @@ const state: DailyCounters = {
 
 // Hard daily caps per source. These are conservative -
 // well below the actual free tier limits.
-// AI generators don't need caps — their external limits (neurons, credits,
-// rate limits) are handled by error detection in each generator.
-// Only real image sources need guards to prevent API key revocation.
+// Real image sources: guards prevent API key revocation.
+// Gemini: paid service, cost guard to stay within $1000/year budget.
+// Other AI generators: free, external limits handle it.
 const DAILY_CAPS: Record<string, number> = {
   "unsplash": 40,          // 50/hr but we only run a few times/day
   "pexels": 6,             // 200/month total, ~6/day to stay within budget
   "pixabay": 300,          // 100/min limit, raised to maximize real image intake
+  "gemini": 500,           // ~$0.06/day at 500 images = ~$22/year, well under $1000
 };
 
 function today(): string {

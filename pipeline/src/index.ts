@@ -12,12 +12,12 @@ import { fetchUnsplashImages } from "./sources/unsplash";
 import { fetchPexelsImages } from "./sources/pexels";
 import { fetchPixabayImages } from "./sources/pixabay";
 import {
-  generateWithPollinations,
   generateWithWorkersAI,
   generateWithHuggingFace,
   randomCategory,
   type GeneratedImage,
 } from "./sources/ai-generators";
+import { generateWithGemini } from "./sources/gemini";
 import { isCoolingDown } from "./sources/rate-limiter";
 import { validateImage } from "./processing/validator";
 import { computeContentHash, isDuplicate } from "./processing/hasher";
@@ -42,6 +42,7 @@ interface Env {
   PEXELS_API_KEY: string;
   PIXABAY_API_KEY: string;
   HF_TOKEN?: string;
+  GEMINI_API_KEY?: string;
 }
 
 // ---- Config ----
@@ -65,7 +66,7 @@ const PIXABAY_IMAGES_PER_REQUEST = 5;
 // Per-generator attempt counts per trigger
 const WORKERS_AI_PER_BATCH = 5;
 const HF_PER_BATCH = 5;
-const POLLINATIONS_PER_BATCH = 1; // slow (~90s each)
+const GEMINI_PER_BATCH = 5;
 
 // ---- Hono app ----
 
@@ -111,19 +112,11 @@ app.get("/trigger/ai/hf", (c) => {
   return c.json({ type: "ai/hf", status: "started" });
 });
 
-app.get("/trigger/ai/pollinations", (c) => {
+app.get("/trigger/ai/gemini", (c) => {
   const env = c.env;
-  c.executionCtx.waitUntil(runGeneratorBatch(env, "pollinations", POLLINATIONS_PER_BATCH,
-    (cat) => generateWithPollinations(cat)));
-  return c.json({ type: "ai/pollinations", status: "started" });
-});
-
-// Legacy route — triggers all three sequentially (may timeout)
-app.get("/trigger/ai", (c) => {
-  const env = c.env;
-  c.executionCtx.waitUntil(runGeneratorBatch(env, "workers-ai", WORKERS_AI_PER_BATCH,
-    (cat) => generateWithWorkersAI(env.AI, cat)));
-  return c.json({ type: "ai", status: "started" });
+  c.executionCtx.waitUntil(runGeneratorBatch(env, "gemini", GEMINI_PER_BATCH,
+    (cat) => generateWithGemini(env.GEMINI_API_KEY, cat)));
+  return c.json({ type: "ai/gemini", status: "started" });
 });
 
 app.get("/trigger/elo", (c) => {
