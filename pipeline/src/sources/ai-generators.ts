@@ -90,8 +90,8 @@ export async function generateWithWorkersAI(
       {
         prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
         num_steps: 8,
-        width: 1024,
-        height: 1024,
+        width: 768,
+        height: 768,
       }
     );
 
