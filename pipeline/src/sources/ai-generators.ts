@@ -69,7 +69,10 @@ export async function generateWithWorkersAI(
   ai: unknown,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!ai) return null;
+  if (!ai) {
+    console.log("[AI-Gen] Workers AI binding is falsy, skipping");
+    return null;
+  }
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
