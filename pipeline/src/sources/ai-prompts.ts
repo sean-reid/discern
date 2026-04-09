@@ -1,3 +1,21 @@
+// Shared type for all generators
+export interface GeneratedImage {
+  data: ArrayBuffer;
+  model: string;
+  prompt: string;
+}
+
+// Builds the base prompt for any generator. Model-specific
+// additions (texture boost, negative prompts) are appended by the caller.
+export function buildPrompt(category: string): { full: string; raw: string } | null {
+  const raw = pickPrompt(category);
+  if (!raw) return null;
+  return {
+    raw,
+    full: `${raw}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
+  };
+}
+
 // Camera/lens combos to mimic real photography metadata
 export const CAMERA_STYLES = [
   "shot on Canon EOS R5, 85mm f/1.4, natural lighting",

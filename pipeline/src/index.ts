@@ -11,13 +11,10 @@ import { v4 as uuidv4 } from "uuid";
 import { fetchUnsplashImages } from "./sources/unsplash";
 import { fetchPexelsImages } from "./sources/pexels";
 import { fetchPixabayImages } from "./sources/pixabay";
-import {
-  generateWithWorkersAI,
-  generateWithHuggingFace,
-  randomCategory,
-  type GeneratedImage,
-} from "./sources/ai-generators";
+import { generateWithWorkersAI } from "./sources/workers-ai";
+import { generateWithHuggingFace } from "./sources/huggingface";
 import { generateWithGemini } from "./sources/gemini";
+import { randomCategory, type GeneratedImage } from "./sources/ai-prompts";
 import { isCoolingDown } from "./sources/rate-limiter";
 import { validateImage } from "./processing/validator";
 import { computeContentHash, isDuplicate } from "./processing/hasher";

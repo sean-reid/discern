@@ -1,14 +1,6 @@
-// ============================================================
-// Google Gemini Flash Image Generation
-//
-// Paid tier, ~$0.06/day for 500 images
-// ~6s per image, 1024x1024, highest quality
-// ============================================================
-
 import { coolDown, markExhausted } from "./rate-limiter";
 import { tryUse } from "./cost-guard";
-import { pickPrompt, cameraStyle, NEGATIVE_PROMPT } from "./ai-prompts";
-import type { GeneratedImage } from "./ai-generators";
+import { buildPrompt, NEGATIVE_PROMPT, type GeneratedImage } from "./ai-prompts";
 
 const MODEL = "gemini-2.5-flash-image";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -19,10 +11,10 @@ export async function generateWithGemini(
 ): Promise<GeneratedImage | null> {
   if (!apiKey || !tryUse("gemini")) return null;
 
-  const prompt = pickPrompt(category);
-  if (!prompt) return null;
+  const p = buildPrompt(category);
+  if (!p) return null;
 
-  const fullPrompt = `Generate a photorealistic photograph: ${prompt}, ${cameraStyle()}, RAW photo, sharp detail, film grain, natural texture. Do not include: ${NEGATIVE_PROMPT}`;
+  const fullPrompt = `Generate a photorealistic photograph: ${p.full}, film grain, natural texture. Do not include: ${NEGATIVE_PROMPT}`;
 
   try {
     const response = await fetch(
@@ -35,25 +27,14 @@ export async function generateWithGemini(
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
-          },
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
         }),
         signal: AbortSignal.timeout(30_000),
       }
     );
 
-    if (response.status === 429) {
-      console.log("[AI-Gen] Gemini rate limited");
-      coolDown("gemini", 60_000);
-      return null;
-    }
-
-    if (response.status === 402 || response.status === 403) {
-      console.log("[AI-Gen] Gemini quota/billing issue");
-      markExhausted("gemini");
-      return null;
-    }
+    if (response.status === 429) { coolDown("gemini", 60_000); return null; }
+    if (response.status === 402 || response.status === 403) { markExhausted("gemini"); return null; }
 
     if (!response.ok) {
       const text = await response.text();
@@ -79,7 +60,6 @@ export async function generateWithGemini(
       return null;
     }
 
-    // Find the image part
     for (const part of parts) {
       if (part.inlineData?.data) {
         const binaryString = atob(part.inlineData.data);
@@ -94,7 +74,7 @@ export async function generateWithGemini(
           return null;
         }
 
-        return { data, model: "gemini-flash", prompt };
+        return { data, model: "gemini-flash", prompt: p.raw };
       }
     }
 
