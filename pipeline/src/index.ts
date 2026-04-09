@@ -204,7 +204,7 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   }
 
   try {
-    const imgs = await fetchPixabayImages(env.PIXABAY_API_KEY, query, IMAGES_PER_SOURCE, categorySlug);
+    const imgs = await fetchPixabayImages(env.PIXABAY_API_KEY, query, 5, categorySlug);
     sourceResults.push({ source: "pixabay", images: imgs });
   } catch (err) {
     errors.push(`Pixabay: ${err}`);

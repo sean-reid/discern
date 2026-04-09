@@ -29,7 +29,7 @@ const state: DailyCounters = {
 const DAILY_CAPS: Record<string, number> = {
   "unsplash": 40,          // 50/hr but we only run a few times/day
   "pexels": 6,             // 200/month total, ~6/day to stay within budget
-  "pixabay": 80,           // 100/min limit, cap conservatively per day
+  "pixabay": 300,          // 100/min limit, raised to maximize real image intake
 };
 
 function today(): string {
