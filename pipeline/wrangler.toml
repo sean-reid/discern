@@ -23,3 +23,11 @@ bucket_name = "discern-images"
 # Workers AI binding (free tier, no API key needed)
 [ai]
 binding = "AI"
+
+# Observability
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
