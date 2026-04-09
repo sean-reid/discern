@@ -22,7 +22,7 @@ export interface GeneratedImage {
 export async function generateWithPollinations(
   category: string
 ): Promise<GeneratedImage | null> {
-  if (isCoolingDown("pollinations")) return null;
+  // cooldown checked by caller (runAiBatch)
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
@@ -69,7 +69,7 @@ export async function generateWithWorkersAI(
   ai: unknown,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!ai || isCoolingDown("workers-ai")) return null;
+  if (!ai) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
@@ -140,7 +140,7 @@ export async function generateWithHuggingFace(
   hfToken: string | undefined,
   category: string
 ): Promise<GeneratedImage | null> {
-  if (!hfToken || isCoolingDown("huggingface")) return null;
+  if (!hfToken) return null;
 
   const prompt = pickPrompt(category);
   if (!prompt) return null;
