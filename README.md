@@ -72,7 +72,13 @@ Workers AI is included free with Cloudflare (10K neurons/day).
 
 ## Environment Variables
 
-For local dev, create `pipeline/.dev.vars`:
+For local dev, create `.dev.vars` in the project root (used by the Next.js app):
+
+```
+IMAGE_BASE_URL=https://pub-xxxxx.r2.dev
+```
+
+And create `pipeline/.dev.vars` (used by the pipeline worker):
 
 ```
 UNSPLASH_ACCESS_KEY=your_key
