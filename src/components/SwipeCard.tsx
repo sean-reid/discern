@@ -15,10 +15,28 @@ import { SWIPE_THRESHOLD_PX, SWIPE_VELOCITY_THRESHOLD } from "@/lib/constants";
 
 interface SwipeCardProps {
   imageUrl: string;
+  imageId: string;
+  imageWidth: number;
+  imageHeight: number;
   isTop: boolean;
   onSwipe: (direction: "left" | "right") => void;
   onDragProgress?: (progress: number) => void;
   overlayOpacity?: number;
+}
+
+// Deterministic random crop on the overflow axis only.
+// Card is always portrait, so:
+//   landscape/square images overflow horizontally → randomize X
+//   portrait images overflow vertically → randomize Y
+function cropPosition(id: string, w: number, h: number): string {
+  const hash = id.charCodeAt(0) + id.charCodeAt(1);
+  const pct = 20 + (hash % 61); // 20-80%, avoids extreme edges
+
+  if (w >= h) {
+    return `${pct}% 50%`;
+  } else {
+    return `50% ${pct}%`;
+  }
 }
 
 export interface SwipeCardHandle {
@@ -58,7 +76,8 @@ function computeGlowShadow(progress: number): string {
 
 
 export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
-  function SwipeCard({ imageUrl, isTop, onSwipe, onDragProgress, overlayOpacity }, ref) {
+  function SwipeCard({ imageUrl, imageId, imageWidth, imageHeight, isTop, onSwipe, onDragProgress, overlayOpacity }, ref) {
+    const objPos = cropPosition(imageId, imageWidth, imageHeight);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-300, 0, 300], [-12, 0, 12]);
     const [scope, animate] = useAnimate();
@@ -110,6 +129,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
             src={imageUrl}
             alt=""
             className="w-full h-full object-cover"
+            style={{ objectPosition: objPos }}
             draggable={false}
           />
           <div
@@ -134,6 +154,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
           src={imageUrl}
           alt="Real or fake?"
           className="w-full h-full object-cover"
+          style={{ objectPosition: objPos }}
           draggable={false}
         />
 
