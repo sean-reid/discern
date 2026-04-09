@@ -115,11 +115,15 @@ export async function generateWithWorkersAI(
       data = result as ArrayBuffer;
     }
 
-    if (data.byteLength < 5000) return null;
+    if (data.byteLength < 5000) {
+      console.log(`[AI-Gen] Workers AI response too small: ${data.byteLength} bytes`);
+      return null;
+    }
 
     return { data, model: "flux-1-schnell", prompt };
   } catch (err) {
     const msg = String(err);
+    console.log(`[AI-Gen] Workers AI error: ${msg}`);
     if (msg.includes("4006") || msg.includes("daily free allocation")) {
       markExhausted("workers-ai");
     } else {
