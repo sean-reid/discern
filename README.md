@@ -109,7 +109,7 @@ npm run deploy:migrations # runs migrations on production D1
 
 ## Pipeline Triggers
 
-The pipeline is triggered by external cron (cron-job.org) hitting these endpoints:
+The pipeline is triggered by external cron ([cron-job.org](https://cron-job.org)) hitting these endpoints:
 
 | Endpoint | What it does | Recommended interval |
 |----------|-------------|---------------------|
