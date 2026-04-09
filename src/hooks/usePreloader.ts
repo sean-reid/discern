@@ -92,6 +92,21 @@ export function usePreloader() {
     current.shownAt = Date.now();
   }
 
+  // Re-stamp shownAt when returning from sleep/background to prevent
+  // anti-cheat "response too old" rejection on first swipe
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        const img = useGameStore.getState().preloadQueue[0];
+        if (img) {
+          img.shownAt = Date.now();
+        }
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   return {
     currentImage: current,
     nextImage: preloadQueue[1] ?? null,
