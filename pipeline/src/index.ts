@@ -44,8 +44,6 @@ interface Env {
 
 // ---- Config ----
 
-const WORKER_URL = "https://discern-pipeline.seanreid.workers.dev";
-
 const CATEGORY_QUERIES: Record<string, string[]> = {
   people: ["portrait photography", "candid people"],
   landscapes: ["landscape photography", "nature scenery"],
@@ -121,34 +119,10 @@ app.get("/trigger/elo", (c) => {
   return c.json({ started: "elo-recalculation" });
 });
 
-// ---- Cron handler ----
+// ---- Worker export ----
 
 const worker = {
   fetch: app.fetch,
-
-  async scheduled(
-    event: ScheduledEvent,
-    env: Env,
-    ctx: ExecutionContext
-  ): Promise<void> {
-    const hour = new Date(event.scheduledTime).getUTCHours();
-
-    switch (hour) {
-      case 3:
-      case 15:
-        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/real`).catch(() => {}));
-        break;
-      case 4:
-        ctx.waitUntil(runEloRecalculation(env));
-        break;
-      case 9:
-      case 21:
-        ctx.waitUntil(fetch(`${WORKER_URL}/trigger/ai`).catch(() => {}));
-        break;
-      default:
-        console.log(`No task configured for hour ${hour} UTC`);
-    }
-  },
 };
 
 export default worker;

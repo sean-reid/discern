@@ -117,9 +117,7 @@ The pipeline is triggered by external cron ([cron-job.org](https://cron-job.org)
 | `/trigger/ai/workers` | Generates 5 images via Workers AI | Every 5 min |
 | `/trigger/ai/hf` | Generates 5 images via HuggingFace | Every 5 min |
 | `/trigger/ai/gemini` | Generates 5 images via Gemini Flash | Every 5 min |
-| `/trigger/elo` | Recalculates image difficulty | Handled by Cloudflare cron (04:00 UTC) |
-
-Cloudflare crons at 03:00, 04:00, 09:00, 15:00, 21:00 UTC serve as fallback triggers.
+| `/trigger/elo` | Recalculates image difficulty | Once daily (e.g. 9pm PT) |
 
 ## How It Works
 
