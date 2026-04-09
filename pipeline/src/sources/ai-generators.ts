@@ -89,37 +89,27 @@ export async function generateWithWorkersAI(
       "@cf/black-forest-labs/flux-1-schnell",
       {
         prompt: `${prompt}, ${cameraStyle()}, photorealistic, RAW photo, sharp detail`,
-        num_steps: 8,
-        width: 768,
-        height: 768,
+        steps: 8,
       }
     );
 
-    let data: ArrayBuffer;
-    if (result instanceof ReadableStream) {
-      const reader = result.getReader();
-      const chunks: Uint8Array[] = [];
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
-      }
-      const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
-      const combined = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
-      data = combined.buffer as ArrayBuffer;
-    } else if (result instanceof Uint8Array) {
-      data = result.buffer as ArrayBuffer;
-    } else {
-      data = result as ArrayBuffer;
+    // Response is { image: "base64string" }
+    const response = result as { image?: string };
+    if (!response.image) {
+      console.log("[AI-Gen] Workers AI returned no image field");
+      return null;
     }
 
+    // Decode base64 to binary
+    const binaryString = atob(response.image);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const data = bytes.buffer as ArrayBuffer;
+
     if (data.byteLength < 5000) {
-      console.log(`[AI-Gen] Workers AI response too small: ${data.byteLength} bytes`);
+      console.log(`[AI-Gen] Workers AI image too small: ${data.byteLength} bytes`);
       return null;
     }
 
