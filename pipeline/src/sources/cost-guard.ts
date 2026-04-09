@@ -31,7 +31,7 @@ const DAILY_CAPS: Record<string, number> = {
   "pexels": 6,             // 200/month total, ~6/day to stay within budget
   "pixabay": 300,          // 100/min limit, raised to maximize real image intake
   "gemini": 500,           // ~$0.06/day at 500 images = ~$22/year, well under $1000
-  "huggingface": 20,       // ~$0.10/image = $2/day at 20 images = ~$730/year
+  "huggingface": 200,      // ~$0.003/image = $0.60/day at 200 images = ~$219/year
 };
 
 function today(): string {
