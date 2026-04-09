@@ -60,6 +60,7 @@ const CATEGORY_QUERIES: Record<string, string[]> = {
 
 const CATEGORY_SLUGS = Object.keys(CATEGORY_QUERIES);
 const IMAGES_PER_SOURCE = 2;
+const PIXABAY_IMAGES_PER_REQUEST = 5;
 // Per-generator attempt counts per trigger
 const WORKERS_AI_PER_BATCH = 5;
 const HF_PER_BATCH = 5;
@@ -204,7 +205,7 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
   }
 
   try {
-    const imgs = await fetchPixabayImages(env.PIXABAY_API_KEY, query, 5, categorySlug);
+    const imgs = await fetchPixabayImages(env.PIXABAY_API_KEY, query, PIXABAY_IMAGES_PER_REQUEST, categorySlug);
     sourceResults.push({ source: "pixabay", images: imgs });
   } catch (err) {
     errors.push(`Pixabay: ${err}`);
