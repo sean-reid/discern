@@ -224,7 +224,7 @@ async function ingestCategory(env: Env, offset: number): Promise<void> {
         await insertImage(env.DB, {
           id: imageId, r2Key, isAi: false, categoryId, source,
           sourceId: img.sourceId, sourceUrl: img.sourceUrl,
-          photographer: img.photographer, aiModel: null, phash: hash,
+          photographer: img.photographer, aiModel: null, aiPrompt: null, phash: hash,
           width: validation.width, height: validation.height,
           fileSizeBytes: validation.fileSize, exifConfidence: exif.confidence,
           status: "approved",
@@ -313,7 +313,7 @@ async function runAiBatch(
       await insertImage(env.DB, {
         id: imageId, r2Key, isAi: true, categoryId,
         source: generated.model, sourceId: null, sourceUrl: null,
-        photographer: null, aiModel: generated.model, phash: hash,
+        photographer: null, aiModel: generated.model, aiPrompt: generated.prompt, phash: hash,
         width: validation.width, height: validation.height,
         fileSizeBytes: validation.fileSize, exifConfidence: 0,
         status: "approved",

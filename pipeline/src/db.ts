@@ -12,6 +12,7 @@ export interface InsertImageParams {
   sourceUrl: string | null;
   photographer: string | null;
   aiModel: string | null;
+  aiPrompt: string | null;
   phash: string | null;
   width: number;
   height: number;
@@ -40,9 +41,9 @@ export async function insertImage(
     .prepare(
       `INSERT INTO images (
         id, r2_key, is_ai, category_id, source, source_id, source_url,
-        photographer, ai_model, phash, width, height, file_size_bytes,
+        photographer, ai_model, ai_prompt, phash, width, height, file_size_bytes,
         exif_confidence, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       params.id,
@@ -54,6 +55,7 @@ export async function insertImage(
       params.sourceUrl,
       params.photographer,
       params.aiModel,
+      params.aiPrompt,
       params.phash,
       params.width,
       params.height,
