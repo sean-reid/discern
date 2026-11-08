@@ -16,7 +16,9 @@ export const ELO_DECAY = 0.005; // regression toward ELO_DEFAULT per game
 // --- Swipe Mechanics ---
 export const SWIPE_THRESHOLD_PX = 120;
 export const SWIPE_VELOCITY_THRESHOLD = 500;
-export const RESULT_FLASH_DURATION_MS = 150;
+export const RESULT_PILL_DURATION_MS = 900;
+export const NUDGE_PX = 44;
+export const NUDGE_INTERVAL_MS = 3500;
 
 // --- Image Preloading ---
 export const PRELOAD_QUEUE_SIZE = 5;

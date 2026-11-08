@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { GameImage, UserStats } from "@/lib/types";
+import type { GameImage, SwipeResult, UserStats } from "@/lib/types";
 
 interface GameState {
   // Device identity
@@ -24,8 +24,8 @@ interface GameState {
   clearQueue: () => void;
 
   // Last result flash
-  lastResult: { correct: boolean; isAi: boolean } | null;
-  setLastResult: (result: { correct: boolean; isAi: boolean } | null) => void;
+  lastResult: SwipeResult | null;
+  setLastResult: (result: SwipeResult | null) => void;
 
   // UI flags
   hasSeenOnboarding: boolean;

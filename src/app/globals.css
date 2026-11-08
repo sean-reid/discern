@@ -8,6 +8,8 @@
   --color-card-border: #292524;
   --color-green: #34d399;
   --color-red: #f87171;
+  --color-ai: #a9b4ff;
+  --color-real: #ffaa3c;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

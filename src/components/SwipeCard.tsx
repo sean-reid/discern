@@ -1,17 +1,20 @@
 "use client";
 
-import {
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import { forwardRef, useImperativeHandle, useRef } from "react";
 import {
   motion,
   useMotionValue,
+  useMotionValueEvent,
   useTransform,
   useAnimate,
+  type MotionValue,
   type PanInfo,
 } from "motion/react";
-import { SWIPE_THRESHOLD_PX, SWIPE_VELOCITY_THRESHOLD } from "@/lib/constants";
+import {
+  NUDGE_PX,
+  SWIPE_THRESHOLD_PX,
+  SWIPE_VELOCITY_THRESHOLD,
+} from "@/lib/constants";
 
 interface SwipeCardProps {
   imageUrl: string;
@@ -19,6 +22,7 @@ interface SwipeCardProps {
   isTop: boolean;
   onSwipe: (direction: "left" | "right") => void;
   onDragProgress?: (progress: number) => void;
+  dragValue?: MotionValue<number>;
   overlayOpacity?: number;
 }
 
@@ -35,6 +39,7 @@ function cropPosition(id: string): string {
 
 export interface SwipeCardHandle {
   flyOut: (direction: "left" | "right") => void;
+  nudge: () => void;
 }
 
 // Vivid glow colors: electric blue = AI/digital, hot orange = real/natural
@@ -70,20 +75,25 @@ function computeGlowShadow(progress: number): string {
 
 
 export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
-  function SwipeCard({ imageUrl, imageId, isTop, onSwipe, onDragProgress, overlayOpacity }, ref) {
+  function SwipeCard(
+    { imageUrl, imageId, isTop, onSwipe, onDragProgress, dragValue, overlayOpacity },
+    ref
+  ) {
     const objPos = cropPosition(imageId);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-300, 0, 300], [-12, 0, 12]);
     const [scope, animate] = useAnimate();
+    const dragging = useRef(false);
 
     const glowShadow = useTransform(x, (latest) => {
       const p = Math.max(-1, Math.min(1, latest / SWIPE_THRESHOLD_PX));
       return computeGlowShadow(p);
     });
 
-    x.on("change", (latest) => {
-      const p = Math.abs(latest / SWIPE_THRESHOLD_PX);
-      onDragProgress?.(Math.min(1, p));
+    useMotionValueEvent(x, "change", (latest) => {
+      const p = Math.max(-1, Math.min(1, latest / SWIPE_THRESHOLD_PX));
+      onDragProgress?.(Math.abs(p));
+      dragValue?.set(p);
     });
 
     function flyOut(direction: "left" | "right") {
@@ -92,9 +102,23 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
       animate(scope.current, { x: target, opacity: 0 }, { duration: 0.15 });
     }
 
-    useImperativeHandle(ref, () => ({ flyOut }));
+    function nudge() {
+      if (dragging.current) return;
+      animate(x, [0, -NUDGE_PX, 0, NUDGE_PX, 0], {
+        duration: 1.6,
+        ease: "easeInOut",
+      });
+    }
+
+    useImperativeHandle(ref, () => ({ flyOut, nudge }));
+
+    function handleDragStart() {
+      dragging.current = true;
+      x.stop();
+    }
 
     function handleDragEnd(_: unknown, info: PanInfo) {
+      dragging.current = false;
       const { offset, velocity } = info;
 
       if (
@@ -142,6 +166,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
         drag="x"
         dragElastic={0.7}
         dragConstraints={{ left: 0, right: 0 }}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <img
