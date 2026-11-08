@@ -5,6 +5,7 @@ import {
   motion,
   useMotionValue,
   useMotionValueEvent,
+  useReducedMotion,
   useTransform,
   useAnimate,
   type MotionValue,
@@ -84,6 +85,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
     const rotate = useTransform(x, [-300, 0, 300], [-12, 0, 12]);
     const [scope, animate] = useAnimate();
     const dragging = useRef(false);
+    const reduceMotion = useReducedMotion();
 
     const glowShadow = useTransform(x, (latest) => {
       const p = Math.max(-1, Math.min(1, latest / SWIPE_THRESHOLD_PX));
@@ -103,7 +105,7 @@ export const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
     }
 
     function nudge() {
-      if (dragging.current) return;
+      if (dragging.current || reduceMotion) return;
       animate(x, [0, -NUDGE_PX, 0, NUDGE_PX, 0], {
         duration: 1.6,
         ease: "easeInOut",

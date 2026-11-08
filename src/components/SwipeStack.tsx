@@ -6,7 +6,7 @@ import { SwipeCard, type SwipeCardHandle } from "./SwipeCard";
 import { DirectionLabels } from "./DirectionLabels";
 import { FirstSwipeHint } from "./FirstSwipeHint";
 import { ResultPill } from "./ResultPill";
-import { useGameStore } from "@/stores/game-store";
+import { selectIsFirstVisit, useGameStore } from "@/stores/game-store";
 import { usePreloader } from "@/hooks/usePreloader";
 import { NUDGE_INTERVAL_MS } from "@/lib/constants";
 import { foolRateLine, resultCaption } from "@/lib/result-captions";
@@ -18,6 +18,7 @@ export function SwipeStack() {
   const setLastResult = useGameStore((s) => s.setLastResult);
   const hasSeenOnboarding = useGameStore((s) => s.hasSeenOnboarding);
   const setHasSeenOnboarding = useGameStore((s) => s.setHasSeenOnboarding);
+  const isFirstVisit = useGameStore(selectIsFirstVisit);
   const [dragAbs, setDragAbs] = useState(0);
   const drag = useMotionValue(0);
   const cardRef = useRef<SwipeCardHandle>(null);
@@ -100,7 +101,7 @@ export function SwipeStack() {
 
   const currentId = currentImage?.id;
   useEffect(() => {
-    if (hasSeenOnboarding || !currentId) return;
+    if (!isFirstVisit || !currentId) return;
     const run = () => cardRef.current?.nudge();
     const first = setTimeout(run, 700);
     const repeat = setInterval(run, NUDGE_INTERVAL_MS);
@@ -108,7 +109,7 @@ export function SwipeStack() {
       clearTimeout(first);
       clearInterval(repeat);
     };
-  }, [hasSeenOnboarding, currentId]);
+  }, [isFirstVisit, currentId]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
