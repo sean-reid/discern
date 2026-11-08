@@ -138,6 +138,13 @@ export interface GameImage {
   shownAt: number;
 }
 
+export interface SwipeResult {
+  key: number;
+  correct: boolean;
+  caption: string;
+  detail: string | null;
+}
+
 export interface UserStats {
   elo: number;
   eloDelta: number | null;

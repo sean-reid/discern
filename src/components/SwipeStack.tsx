@@ -1,15 +1,26 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useMotionValue } from "motion/react";
 import { SwipeCard, type SwipeCardHandle } from "./SwipeCard";
-import { useGameStore } from "@/stores/game-store";
+import { DirectionLabels } from "./DirectionLabels";
+import { FirstSwipeHint } from "./FirstSwipeHint";
+import { ResultPill } from "./ResultPill";
+import { selectIsFirstVisit, useGameStore } from "@/stores/game-store";
 import { usePreloader } from "@/hooks/usePreloader";
+import { NUDGE_INTERVAL_MS } from "@/lib/constants";
+import { foolRateLine, resultCaption } from "@/lib/result-captions";
 import type { SwipeResponse } from "@/lib/types";
 
 export function SwipeStack() {
   const deviceId = useGameStore((s) => s.deviceId);
   const updateStats = useGameStore((s) => s.updateStats);
+  const setLastResult = useGameStore((s) => s.setLastResult);
+  const hasSeenOnboarding = useGameStore((s) => s.hasSeenOnboarding);
+  const setHasSeenOnboarding = useGameStore((s) => s.setHasSeenOnboarding);
+  const isFirstVisit = useGameStore(selectIsFirstVisit);
   const [dragAbs, setDragAbs] = useState(0);
+  const drag = useMotionValue(0);
   const cardRef = useRef<SwipeCardHandle>(null);
 
   const swipeCounter = useRef(0);
@@ -31,9 +42,12 @@ export function SwipeStack() {
       const shownAt = currentImage.shownAt;
       const guessedAi = direction === "left";
 
+      if (!hasSeenOnboarding) setHasSeenOnboarding();
+
       setTimeout(() => {
         onImageConsumed(imageId);
         setDragAbs(0);
+        drag.set(0);
       }, 150);
 
       fetch("/api/swipe", {
@@ -62,11 +76,40 @@ export function SwipeStack() {
             bestStreak: data.user.best_streak,
             accuracy: data.user.accuracy,
           });
+          setLastResult({
+            key: thisSwipe,
+            correct: data.correct,
+            caption: resultCaption(data.correct, data.is_ai),
+            detail: data.correct
+              ? null
+              : foolRateLine(data.image.fool_rate, data.image.times_shown),
+          });
         })
         .catch(() => {});
     },
-    [currentImage, deviceId, updateStats, onImageConsumed]
+    [
+      currentImage,
+      deviceId,
+      hasSeenOnboarding,
+      setHasSeenOnboarding,
+      updateStats,
+      setLastResult,
+      onImageConsumed,
+      drag,
+    ]
   );
+
+  const currentId = currentImage?.id;
+  useEffect(() => {
+    if (!isFirstVisit || !currentId) return;
+    const run = () => cardRef.current?.nudge();
+    const first = setTimeout(run, 700);
+    const repeat = setInterval(run, NUDGE_INTERVAL_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(repeat);
+    };
+  }, [isFirstVisit, currentId]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -75,17 +118,19 @@ export function SwipeStack() {
       if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
         e.preventDefault();
         setDragAbs(1);
+        drag.set(-1);
         cardRef.current?.flyOut("left");
       } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
         e.preventDefault();
         setDragAbs(1);
+        drag.set(1);
         cardRef.current?.flyOut("right");
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentImage, deviceId]);
+  }, [currentImage, deviceId, drag]);
 
   if (isLoading) {
     return (
@@ -130,7 +175,12 @@ export function SwipeStack() {
           isTop={true}
           onSwipe={submitSwipe}
           onDragProgress={setDragAbs}
+          dragValue={drag}
         />
+
+        <DirectionLabels drag={drag} />
+        <FirstSwipeHint />
+        <ResultPill />
       </div>
 
       <div className="h-2" />

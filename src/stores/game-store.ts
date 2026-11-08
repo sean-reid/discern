@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { GameImage, UserStats } from "@/lib/types";
+import type { GameImage, SwipeResult, UserStats } from "@/lib/types";
 
-interface GameState {
+export interface GameState {
   // Device identity
   deviceId: string | null;
   setDeviceId: (id: string) => void;
@@ -24,8 +24,8 @@ interface GameState {
   clearQueue: () => void;
 
   // Last result flash
-  lastResult: { correct: boolean; isAi: boolean } | null;
-  setLastResult: (result: { correct: boolean; isAi: boolean } | null) => void;
+  lastResult: SwipeResult | null;
+  setLastResult: (result: SwipeResult | null) => void;
 
   // UI flags
   hasSeenOnboarding: boolean;
@@ -33,6 +33,10 @@ interface GameState {
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
+
+// Returning players never set hasSeenOnboarding, so plays decide too.
+export const selectIsFirstVisit = (s: GameState) =>
+  !s.hasSeenOnboarding && s.stats.totalPlayed === 0;
 
 export const useGameStore = create<GameState>()(
   persist(
