@@ -88,9 +88,13 @@ export function usePreloader() {
 
   // Stamp shownAt when an image first becomes the current (displayed) image
   const current = preloadQueue[0] ?? null;
-  if (current && current.shownAt === 0) {
-    current.shownAt = Date.now();
-  }
+  const currentId = current?.id;
+  useEffect(() => {
+    const img = useGameStore.getState().preloadQueue[0];
+    if (img && img.shownAt === 0) {
+      img.shownAt = Date.now();
+    }
+  }, [currentId]);
 
   // Re-stamp shownAt when returning from sleep/background to prevent
   // anti-cheat "response too old" rejection on first swipe
