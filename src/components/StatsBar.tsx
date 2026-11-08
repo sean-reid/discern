@@ -14,7 +14,7 @@ export function StatsBar({ stats }: StatsBarProps) {
 
   return (
     <div className="flex items-center justify-center gap-6 px-5 py-3">
-      <Stat label="elo" value={Math.round(stats.elo)} testId="elo-rating">
+      <Stat label="rating" value={Math.round(stats.elo)} testId="elo-rating">
         <AnimatePresence mode="wait">
           {stats.eloDelta !== null && stats.eloDelta !== 0 && (
             <motion.span
@@ -34,7 +34,7 @@ export function StatsBar({ stats }: StatsBarProps) {
         </AnimatePresence>
       </Stat>
       <Stat label="streak" value={stats.currentStreak} testId="streak" />
-      <Stat label="acc" value={`${accuracyPct}%`} />
+      <Stat label="accuracy" value={`${accuracyPct}%`} />
       <Stat label="played" value={stats.totalPlayed} testId="total-played" />
     </div>
   );
