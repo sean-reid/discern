@@ -45,13 +45,6 @@ next-env.d.ts
 .open-next/
 .dev.vars
 
-# claude
-.claude/
-CLAUDE.md
-AGENTS.md
-PLAN.md
-SETUP.md
-
 # playwright
 test-results/
 playwright-report/
