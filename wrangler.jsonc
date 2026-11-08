@@ -6,6 +6,7 @@
   "compatibility_date": "2024-12-01",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [{ "pattern": "discern.dwainosaur.com", "custom_domain": true }],
+  "workers_dev": true,
 
   // D1 Database
   "d1_databases": [
