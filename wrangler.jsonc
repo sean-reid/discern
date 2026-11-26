@@ -5,7 +5,7 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "compatibility_date": "2024-12-01",
   "compatibility_flags": ["nodejs_compat"],
-  "routes": [{ "pattern": "discern.dwainosaur.com", "custom_domain": true }],
+  "routes": [{ "pattern": "discern.seanre.id", "custom_domain": true }],
   "workers_dev": true,
 
   // D1 Database

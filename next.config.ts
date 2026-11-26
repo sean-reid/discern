@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         has: [{ type: "host", value: "discern\\.seanreid\\.workers\\.dev" }],
-        destination: "https://discern.dwainosaur.com/:path*",
+        destination: "https://discern.seanre.id/:path*",
         permanent: true,
       },
     ];
